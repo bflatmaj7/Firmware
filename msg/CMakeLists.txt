@@ -69,6 +69,7 @@ set(msg_files
 	log_message.msg
 	manual_control_setpoint.msg
 	mavlink_log.msg
+	meteo.msg
 	mission.msg
 	mission_result.msg
 	mount_orientation.msg

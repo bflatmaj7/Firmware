@@ -602,6 +602,7 @@ void Logger::add_default_topics()
 	add_topic("input_rc", 200);
 	add_topic("landing_target_pose");
 	add_topic("manual_control_setpoint", 200);
+	add_topic("meteo",100);
 	add_topic("mission");
 	add_topic("mission_result");
 	add_topic("optical_flow", 50);

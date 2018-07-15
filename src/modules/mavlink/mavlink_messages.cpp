@@ -79,6 +79,7 @@
 #include <uORB/topics/home_position.h>
 #include <uORB/topics/manual_control_setpoint.h>
 #include <uORB/topics/mavlink_log.h>
+#include <uORB/topics/meteo.h>
 #include <uORB/topics/optical_flow.h>
 #include <uORB/topics/position_setpoint_triplet.h>
 #include <uORB/topics/sensor_combined.h>
@@ -3900,6 +3901,68 @@ protected:
 	}
 };
 
+class MavlinkStreamMeteo : public MavlinkStream
+{
+public:
+    const char *get_name() const
+    {
+        return MavlinkStreamMeteo::get_name_static();
+    }
+    static const char *get_name_static()
+    {
+        return "METEO";
+    }
+	static uint16_t get_id_static()
+	{
+		return MAVLINK_MSG_ID_METEO;
+	}
+    uint16_t get_id()
+    {
+        return get_id_static();
+    }
+    static MavlinkStream *new_instance(Mavlink *mavlink)
+    {
+        return new MavlinkStreamMeteo(mavlink);
+    }
+    unsigned get_size()
+    {
+        return MAVLINK_MSG_ID_METEO_LEN + MAVLINK_NUM_NON_PAYLOAD_BYTES;
+    }
+
+private:
+    MavlinkOrbSubscription *_meteo_sub;
+    uint64_t _meteo_time;
+//	MavlinkOrbSubscription *_local_meteo_sub;
+
+    /* do not allow top copying this class */
+    MavlinkStreamMeteo(MavlinkStreamMeteo &);
+    MavlinkStreamMeteo& operator = (const MavlinkStreamMeteo &);
+
+protected:
+    explicit MavlinkStreamMeteo(Mavlink *mavlink) : MavlinkStream(mavlink),
+        _meteo_sub(_mavlink->add_orb_subscription(ORB_ID(meteo))),  // make sure you enter the name of your uORB topic here
+        _meteo_time(0)
+    {}
+
+    bool send(const hrt_abstime t)
+    {
+        struct meteo_s _meteo;    //make sure ca_traj_struct_s is the definition of your uORB topic
+
+        if (_meteo_sub->update(&_meteo_time, &_meteo)) {
+            mavlink_meteo_t _msg_meteo;  //make sure mavlink_ca_trajectory_t is the definition of your custom MAVLink message
+
+            _msg_meteo.temperature = _meteo.temperature;
+            _msg_meteo.humidity  = _meteo.humidity;
+
+			mavlink_msg_meteo_send_struct(_mavlink->get_channel(), &_msg_meteo);
+
+			return true;
+		}
+
+		return false;
+    }
+};
+
 class MavlinkStreamMountOrientation : public MavlinkStream
 {
 public:
@@ -4111,6 +4174,7 @@ static const StreamListItem streams_list[] = {
 	StreamListItem(&MavlinkStreamADSBVehicle::new_instance, &MavlinkStreamADSBVehicle::get_name_static, &MavlinkStreamADSBVehicle::get_id_static),
 	StreamListItem(&MavlinkStreamCollision::new_instance, &MavlinkStreamCollision::get_name_static, &MavlinkStreamCollision::get_id_static),
 	StreamListItem(&MavlinkStreamWind::new_instance, &MavlinkStreamWind::get_name_static, &MavlinkStreamWind::get_id_static),
+	StreamListItem(&MavlinkStreamMeteo::new_instance, &MavlinkStreamMeteo::get_name_static, &MavlinkStreamMeteo::get_id_static),
 	StreamListItem(&MavlinkStreamMountOrientation::new_instance, &MavlinkStreamMountOrientation::get_name_static, &MavlinkStreamMountOrientation::get_id_static),
 	StreamListItem(&MavlinkStreamHighLatency2::new_instance, &MavlinkStreamHighLatency2::get_name_static, &MavlinkStreamHighLatency2::get_id_static),
 	StreamListItem(&MavlinkStreamGroundTruth::new_instance, &MavlinkStreamGroundTruth::get_name_static, &MavlinkStreamGroundTruth::get_id_static)

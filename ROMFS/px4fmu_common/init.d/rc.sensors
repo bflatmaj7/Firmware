@@ -384,6 +384,13 @@ then
 	sf1xx start
 fi
 
+
+# lightware i2c lidar sensor
+if param greater SENS_EN_HYT271 0
+then
+	hyt271 start
+fi
+
 # mb12xx sonar sensor
 if param greater SENS_EN_MB12XX 0
 then

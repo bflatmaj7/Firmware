@@ -116,6 +116,7 @@ MavlinkReceiver::MavlinkReceiver(Mavlink *parent) :
 	_hil_distance_sensor_pub(nullptr),
 	_flow_distance_sensor_pub(nullptr),
 	_distance_sensor_pub(nullptr),
+	_meteo_pub(nullptr),
 	_offboard_control_mode_pub(nullptr),
 	_actuator_controls_pub(nullptr),
 	_att_sp_pub(nullptr),
@@ -285,6 +286,10 @@ MavlinkReceiver::handle_message(mavlink_message_t *msg)
 
 	case MAVLINK_MSG_ID_DISTANCE_SENSOR:
 		handle_message_distance_sensor(msg);
+		break;
+
+	case MAVLINK_MSG_ID_METEO:
+		handle_message_meteo(msg);
 		break;
 
 	case MAVLINK_MSG_ID_FOLLOW_TARGET:
@@ -788,6 +793,29 @@ MavlinkReceiver::handle_message_distance_sensor(mavlink_message_t *msg)
 
 	} else {
 		orb_publish(ORB_ID(distance_sensor), _distance_sensor_pub, &d);
+	}
+}
+
+void
+MavlinkReceiver::handle_message_meteo(mavlink_message_t *msg)
+{
+	/* distance sensor */
+	mavlink_meteo_t met;
+	mavlink_msg_meteo_decode(msg, &met);
+
+	struct meteo_s d;
+	memset(&d, 0, sizeof(d));
+
+	d.timestamp = hrt_absolute_time();
+	d.id = 	MAVLINK_MSG_ID_METEO;
+	d.temperature = met.temperature;
+	d.humidity = met.humidity;
+
+	if (_meteo_pub == nullptr) {
+		_meteo_pub = orb_advertise(ORB_ID(meteo), &d);
+
+	} else {
+		orb_publish(ORB_ID(meteo), _meteo_pub, &d);
 	}
 }
 
