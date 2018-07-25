@@ -73,6 +73,7 @@
 #include <uORB/topics/battery_status.h>
 #include <uORB/topics/distance_sensor.h>
 #include <uORB/topics/meteo.h>
+#include <uORB/topics/ins.h>
 #include <uORB/topics/follow_target.h>
 #include <uORB/topics/landing_target_pose.h>
 #include <uORB/topics/transponder_report.h>
@@ -147,6 +148,7 @@ private:
 	void handle_message_hil_state_quaternion(mavlink_message_t *msg);
 	void handle_message_distance_sensor(mavlink_message_t *msg);
 	void handle_message_meteo(mavlink_message_t *msg);
+	void handle_message_ins(mavlink_message_t *msg);
 	void handle_message_follow_target(mavlink_message_t *msg);
 	void handle_message_landing_target(mavlink_message_t *msg);
 	void handle_message_adsb_vehicle(mavlink_message_t *msg);
@@ -218,6 +220,7 @@ private:
 	orb_advert_t _flow_distance_sensor_pub;
 	orb_advert_t _distance_sensor_pub;
 	orb_advert_t _meteo_pub;
+	orb_advert_t _ins_pub;
 	orb_advert_t _offboard_control_mode_pub;
 	orb_advert_t _actuator_controls_pub;
 	orb_advert_t _att_sp_pub;

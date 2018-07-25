@@ -7,9 +7,9 @@ set(config_module_list
 	# Board support modules
 	#
 	#drivers/barometer
-	drivers/differential_pressure
+	#drivers/differential_pressure
 	#drivers/magnetometer
-	#drivers/telemetry
+	drivers/telemetry
 
 	#drivers/imu/adis16448
 	drivers/barometer/ms5611
@@ -17,10 +17,12 @@ set(config_module_list
 	#drivers/imu/bmi160
 	#drivers/barometer/bmp280
 	#drivers/bst
-	drivers/camera_trigger
+	#drivers/camera_trigger
 	#drivers/frsky_telemetry
-	drivers/gps
+	#drivers/gps
 	#drivers/hott
+	drivers/hyt271
+	drivers/imu/sbg_ellipse_d
 	#drivers/iridiumsbd
 	#drivers/irlock
 	drivers/imu/l3gd20
@@ -38,7 +40,7 @@ set(config_module_list
 	drivers/px4flow
 	drivers/px4fmu
 	drivers/px4io
-	drivers/rgbled
+	#drivers/rgbled
 	drivers/stm32
 	drivers/stm32/adc
 	drivers/stm32/tone_alarm
@@ -46,13 +48,13 @@ set(config_module_list
 	drivers/vmount
 
 	# distance sensors
-	drivers/distance_sensor/ll40ls
-	drivers/distance_sensor/mb12xx
-	drivers/distance_sensor/sf0x
-	drivers/distance_sensor/sf1xx
-	drivers/distance_sensor/srf02
-	drivers/distance_sensor/teraranger
-	drivers/distance_sensor/tfmini
+	#drivers/distance_sensor/ll40ls
+	#drivers/distance_sensor/mb12xx
+	#drivers/distance_sensor/sf0x
+	#drivers/distance_sensor/sf1xx
+	#drivers/distance_sensor/srf02
+	#drivers/distance_sensor/teraranger
+	#drivers/distance_sensor/tfmini
 	#drivers/distance_sensor/ulanding
 	modules/sensors
 
@@ -75,10 +77,10 @@ set(config_module_list
 	systemcmds/pwm
 	systemcmds/reboot
 	#systemcmds/sd_bench
-	systemcmds/top
-	#systemcmds/topic_listener
-	systemcmds/tune_control
-	systemcmds/ver
+	#systemcmds/top
+	systemcmds/topic_listener
+	#systemcmds/tune_control
+	#systemcmds/ver
 
 	#
 	# Testing
@@ -96,10 +98,10 @@ set(config_module_list
 	#
 	# General system control
 	#
-	modules/camera_feedback
+	#modules/camera_feedback
 	modules/commander
 	modules/events
-	#modules/gpio_led
+	modules/gpio_led
 	modules/land_detector
 	modules/load_mon
 	modules/mavlink
@@ -110,7 +112,7 @@ set(config_module_list
 	# Estimation modules
 	#
 	#modules/attitude_estimator_q
-	modules/ekf2
+	#modules/ekf2
 	#modules/local_position_estimator
 	#modules/position_estimator_inav
 	#modules/landing_target_estimator

@@ -385,10 +385,17 @@ then
 fi
 
 
-# lightware i2c lidar sensor
+# lightware i2c temp and hum sensor
 if param greater SENS_EN_HYT271 0
 then
 	hyt271 start
+	ellipse_d start
+fi
+
+# inertial navigation system
+if param greater SENS_EN_ELLIPSE_D 0
+then
+	ellipse_d start
 fi
 
 # mb12xx sonar sensor

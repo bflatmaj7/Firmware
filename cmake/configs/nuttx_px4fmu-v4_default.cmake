@@ -13,6 +13,7 @@ set(config_module_list
 	drivers/magnetometer
 	drivers/telemetry
 	drivers/imu
+	drivers/vectoflow_pressurescanner
 
 	drivers/batt_smbus
 	drivers/blinkm

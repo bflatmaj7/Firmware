@@ -77,6 +77,7 @@
 #include <uORB/topics/fw_pos_ctrl_status.h>
 #include <uORB/topics/geofence_result.h>
 #include <uORB/topics/home_position.h>
+#include <uORB/topics/ins.h>
 #include <uORB/topics/manual_control_setpoint.h>
 #include <uORB/topics/mavlink_log.h>
 #include <uORB/topics/meteo.h>
@@ -3963,6 +3964,72 @@ protected:
     }
 };
 
+class MavlinkStreamIns : public MavlinkStream
+{
+public:
+    const char *get_name() const
+    {
+        return MavlinkStreamIns::get_name_static();
+    }
+    static const char *get_name_static()
+    {
+        return "INS";
+    }
+	static uint16_t get_id_static()
+	{
+		return MAVLINK_MSG_ID_INS;
+	}
+    uint16_t get_id()
+    {
+        return get_id_static();
+    }
+    static MavlinkStream *new_instance(Mavlink *mavlink)
+    {
+        return new MavlinkStreamIns(mavlink);
+    }
+    unsigned get_size()
+    {
+        return MAVLINK_MSG_ID_INS_LEN + MAVLINK_NUM_NON_PAYLOAD_BYTES;
+    }
+
+private:
+    MavlinkOrbSubscription *_ins_sub;
+    uint64_t _ins_time;
+//	MavlinkOrbSubscription *_local_meteo_sub;
+
+    /* do not allow top copying this class */
+    MavlinkStreamIns(MavlinkStreamIns &);
+    MavlinkStreamIns& operator = (const MavlinkStreamIns &);
+
+protected:
+    explicit MavlinkStreamIns(Mavlink *mavlink) : MavlinkStream(mavlink),
+        _ins_sub(_mavlink->add_orb_subscription(ORB_ID(ins))),  // make sure you enter the name of your uORB topic here
+        _ins_time(0)
+    {}
+
+    bool send(const hrt_abstime t)
+    {
+        struct ins_s _ins;    //make sure ca_traj_struct_s is the definition of your uORB topic
+
+        if (_ins_sub->update(&_ins_time, &_ins)) {
+            mavlink_ins_t _msg_ins;  //make sure mavlink_ca_trajectory_t is the definition of your custom MAVLink message
+
+            _msg_ins.roll = _ins.roll;
+            _msg_ins.pitch  = _ins.pitch;
+            _msg_ins.yaw  = _ins.yaw;
+            _msg_ins.vns  = _ins.vns;
+            _msg_ins.vew  = _ins.vew;
+            _msg_ins.vud  = _ins.vud;
+
+			mavlink_msg_ins_send_struct(_mavlink->get_channel(), &_msg_ins);
+
+			return true;
+		}
+
+		return false;
+    }
+};
+
 class MavlinkStreamMountOrientation : public MavlinkStream
 {
 public:
@@ -4175,6 +4242,7 @@ static const StreamListItem streams_list[] = {
 	StreamListItem(&MavlinkStreamCollision::new_instance, &MavlinkStreamCollision::get_name_static, &MavlinkStreamCollision::get_id_static),
 	StreamListItem(&MavlinkStreamWind::new_instance, &MavlinkStreamWind::get_name_static, &MavlinkStreamWind::get_id_static),
 	StreamListItem(&MavlinkStreamMeteo::new_instance, &MavlinkStreamMeteo::get_name_static, &MavlinkStreamMeteo::get_id_static),
+	StreamListItem(&MavlinkStreamIns::new_instance, &MavlinkStreamIns::get_name_static, &MavlinkStreamIns::get_id_static),
 	StreamListItem(&MavlinkStreamMountOrientation::new_instance, &MavlinkStreamMountOrientation::get_name_static, &MavlinkStreamMountOrientation::get_id_static),
 	StreamListItem(&MavlinkStreamHighLatency2::new_instance, &MavlinkStreamHighLatency2::get_name_static, &MavlinkStreamHighLatency2::get_id_static),
 	StreamListItem(&MavlinkStreamGroundTruth::new_instance, &MavlinkStreamGroundTruth::get_name_static, &MavlinkStreamGroundTruth::get_id_static)

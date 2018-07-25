@@ -62,6 +62,7 @@ set(msg_files
 	gps_inject_data.msg
 	home_position.msg
 	input_rc.msg
+	ins.msg
 	irlock_report.msg
 	landing_target_innovations.msg
 	landing_target_pose.msg
@@ -70,6 +71,7 @@ set(msg_files
 	manual_control_setpoint.msg
 	mavlink_log.msg
 	meteo.msg
+	mhp.msg
 	mission.msg
 	mission_result.msg
 	mount_orientation.msg

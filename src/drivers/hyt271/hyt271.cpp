@@ -245,7 +245,8 @@ HYT271::init()
 	/* get a publish handle on the range finder topic */
 	struct meteo_s ds_report = {};
 
-	_meteo_topic = orb_advertise(ORB_ID(meteo), &ds_report);
+	_meteo_topic = orb_advertise_multi(ORB_ID(meteo), &ds_report,
+			 &_orb_class_instance, ORB_PRIO_HIGH);
 
 	if (_meteo_topic == nullptr) {
 		DEVICE_LOG("failed to create meteo object. Did you start uOrb?");
@@ -479,7 +480,7 @@ HYT271::collect()
 
 	/* publish it, if we are the primary */
 	if (_meteo_topic != nullptr) {
-		dbg.value = temperature;
+//		dbg.value = temperature;
 //		orb_publish(ORB_ID(debug_key_value), pub_dbg, &dbg);
 		orb_publish(ORB_ID(meteo), _meteo_topic, &report);
 		PX4_WARN("meteo published");
