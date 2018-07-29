@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- *   Copyright (c) 2017 PX4 Development Team. All rights reserved.
+ *   Copyright (C) 2013 PX4 Development Team. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -31,15 +31,20 @@
  *
  ****************************************************************************/
 
-#include "vectoflow.hpp"
-/*
- * Driver 'main' command.
+/**
+ * @file Inertial measurement unit driver interface.
  */
-extern "C" __EXPORT int vectoflow_main(int argc, char *argv[]);
 
+#ifndef _DRV_IMU_H
+#define _DRV_IMU_H
 
-int
-vectoflow_main(int argc, char *argv[])
-{
-	return 0;
-}
+#include <stdint.h>
+#include <sys/ioctl.h>
+
+#include "drv_sensor.h"
+#include "drv_orb_dev.h"
+
+#define MHP_BASE_DEVICE_PATH	"/dev/mhp"
+#define MHP0_DEVICE_PATH	"/dev/mhp0"
+
+#endif /* _DRV_IMU_H */

@@ -31,11 +31,9 @@
 #
 ############################################################################
 px4_add_module(
-	MODULE drivers__vectoflow_pressurescanner
-	MAIN vectoflow
-	STACK_MAIN 1200
-	COMPILE_FLAGS
+	MODULE drivers__mhp
+	MAIN mhp
 	SRCS
-		vectoflow.cpp
+		mhp.cpp
 	DEPENDS
 	)
