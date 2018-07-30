@@ -70,7 +70,7 @@
 #include <board_config.h>
 
 // designated SERIAL4/5 on Pixhawk
-#define ELLIPSE_D_DEFAULT_PORT		"/dev/ttyS6"
+#define ELLIPSE_D_DEFAULT_PORT		"/dev/ttyS8"
 
 class ELLIPSE_D : public device::CDev
 {

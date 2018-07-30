@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- *   Copyright (C) 2013 PX4 Development Team. All rights reserved.
+ *   Copyright (c) 2012-2015 PX4 Development Team. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -32,19 +32,81 @@
  ****************************************************************************/
 
 /**
- * @file Inertial measurement unit driver interface.
+ * @file can.cpp
+ *
+ * Base class for devices attached via the CAN bus.
+ *
  */
 
-#ifndef _DRV_IMU_H
-#define _DRV_IMU_H
+#include "CAN.hpp"
 
-#include <stdint.h>
-#include <sys/ioctl.h>
+namespace device
+{
 
-#include "drv_sensor.h"
-#include "drv_orb_dev.h"
+CAN::CAN(const char *name, const char *devname) :
+	CDev(name, devname)
+{
+	DEVICE_DEBUG("CAN::CAN name = %s devname = %s", name, devname);
+	// fill in _device_id fields for a I2C device
+	_device_id.devid_s.bus_type = DeviceBusType_CAN;
+	// devtype needs to be filled in by the driver
+	_device_id.devid_s.devtype = 0;
+}
 
-#define MHP_BASE_DEVICE_PATH	"/dev/mhp"
-#define MHP0_DEVICE_PATH	"/dev/mhp0"
+CAN::~CAN()
+{
+	if (_dev) {
+//		px4_canbus_uninitialize(_dev);
+		_dev = nullptr;
+	}
+}
 
-#endif /* _DRV_IMU_H */
+
+int
+CAN::init()
+{
+	int ret = PX4_ERROR;
+//	unsigned bus_index;
+
+	// attach to the i2c bus
+//	_dev = px4_canbus_initialize(get_device_bus());
+
+	if (_dev == nullptr) {
+		DEVICE_DEBUG("failed to init CAN");
+		ret = -ENOENT;
+		goto out;
+	}
+
+
+	// call the probe function to check whether the device is present
+	ret = probe();
+
+	if (ret != OK) {
+		DEVICE_DEBUG("probe failed");
+		goto out;
+	}
+
+	// do base class init, which will create device node, etc
+	ret = CDev::init();
+
+	if (ret != OK) {
+		DEVICE_DEBUG("cdev init failed");
+		goto out;
+	}
+
+//	// tell the world where we are
+//	DEVICE_LOG("on CAN bus %d at 0x%02x (bus: %u KHz, max: %u KHz)",
+//		   get_device_bus(), get_device_address(), _bus_clocks[bus_index] / 1000, _frequency / 1000);
+
+out:
+
+	if ((ret != OK) && (_dev != nullptr)) {
+//		px4_canbus_uninitialize(_dev);
+		_dev = nullptr;
+	}
+
+	return ret;
+}
+
+
+} // namespace device

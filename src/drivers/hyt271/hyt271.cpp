@@ -75,7 +75,7 @@
 #include <board_config.h>
 
 /* Configuration Constants */
-#define HYT271_BUS 		PX4_I2C_BUS_EXPANSION
+#define HYT271_BUS 		PX4_I2C_BUS_EXPANSION3
 #define HYT271_BASEADDR 	0x28
 #define HYT271_DEVICE_PATH	"/dev/hyt271"
 

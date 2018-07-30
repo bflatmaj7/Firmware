@@ -130,6 +130,7 @@ public:
 		DeviceBusType_I2C     = 1,
 		DeviceBusType_SPI     = 2,
 		DeviceBusType_UAVCAN  = 3,
+		DeviceBusType_CAN    = 4,
 	};
 
 	/**

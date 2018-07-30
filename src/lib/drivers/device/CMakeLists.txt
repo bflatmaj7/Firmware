@@ -43,6 +43,10 @@ if (${OS} STREQUAL "nuttx")
 	if ("${CONFIG_SPI}" STREQUAL "y")
 		list(APPEND SRCS_PLATFORM nuttx/SPI.cpp)
 	endif()
+
+	if ("${CONFIG_CAN}" STREQUAL "y")
+		list(APPEND SRCS_PLATFORM nuttx/CAN.cpp)
+	endif()
 else()
 	list(APPEND SRCS_PLATFORM
 		posix/I2C.cpp
