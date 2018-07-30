@@ -160,7 +160,7 @@ private:
 extern "C" __EXPORT int psc5b_main(int argc, char *argv[]);
 
 PSC5B::PSC5B(const char *port) :
-	CAN("PSC5B", PSC5B0_DEVICE_PATH),
+	CAN("PSC5B", PSC5B0_DEVICE_PATH, 1),
 	_dp0(-1.0f),
 	_dp1(-1.0f),
 	_dp2(-1.0f),

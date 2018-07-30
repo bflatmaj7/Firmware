@@ -75,7 +75,7 @@ protected:
 //	 * @param address	I2C bus address, or zero if set_address will be used
 //	 * @param frequency	I2C bus frequency for the device (currently not used)
 //	 */
-	CAN(const char *name, const char *devname);
+	CAN(const char *name, const char *devname, int bus);
 	virtual ~CAN();
 
 	virtual int	init();

@@ -43,12 +43,13 @@
 namespace device
 {
 
-CAN::CAN(const char *name, const char *devname) :
+CAN::CAN(const char *name, const char *devname, int bus) :
 	CDev(name, devname)
 {
 	DEVICE_DEBUG("CAN::CAN name = %s devname = %s", name, devname);
 	// fill in _device_id fields for a I2C device
 	_device_id.devid_s.bus_type = DeviceBusType_CAN;
+	_device_id.devid_s.bus = bus;
 	// devtype needs to be filled in by the driver
 	_device_id.devid_s.devtype = 0;
 }
@@ -69,7 +70,7 @@ CAN::init()
 //	unsigned bus_index;
 
 	// attach to the i2c bus
-//	_dev = px4_canbus_initialize(get_device_bus());
+	_dev = px4_caninitialize(get_device_bus());
 
 	if (_dev == nullptr) {
 		DEVICE_DEBUG("failed to init CAN");

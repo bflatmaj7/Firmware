@@ -39,6 +39,7 @@
 __BEGIN_DECLS
 #include <nuttx/spi/spi.h>
 #include <nuttx/i2c/i2c_master.h>
+#include <nuttx/can/can.h>
 
 /* For historical reasons (NuttX STM32 numbering) PX4 bus numbering is 1 based
  * All PX4 code, including, board code is written to assuming 1 based numbering.
@@ -79,6 +80,7 @@ __BEGIN_DECLS
 #    include <stm32_tim.h>
 #    include <stm32_spi.h>
 #    include <stm32_i2c.h>
+#    include <stm32_can.h>
 
 /* STM32/32F7 defines the 96 bit UUID as
  *  init32_t[3] that can be read as bytes/half-words/words
@@ -135,6 +137,8 @@ __BEGIN_DECLS
 
 #    define px4_i2cbus_initialize(bus_num_1based)   stm32_i2cbus_initialize(bus_num_1based)
 #    define px4_i2cbus_uninitialize(pdev)           stm32_i2cbus_uninitialize(pdev)
+
+#    define px4_caninitialize(bus_num_1based)       stm32_caninitialize(bus_num_1based)
 
 #    define px4_arch_configgpio(pinset)             stm32_configgpio(pinset)
 #    define px4_arch_unconfiggpio(pinset)           stm32_unconfiggpio(pinset)

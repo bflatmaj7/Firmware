@@ -86,6 +86,8 @@ typedef struct {
 	const struct px4_can_ops_t *ops; /* I2C vtable */
 } px4_can_dev_t;
 
+
+
 #else
 #error "No target platform defined"
 #endif
