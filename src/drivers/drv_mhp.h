@@ -44,7 +44,7 @@
 #include "drv_sensor.h"
 #include "drv_orb_dev.h"
 
-#define PSC5B_BASE_DEVICE_PATH	"/dev/psc5b"
-#define PSC5B0_DEVICE_PATH	"/dev/psc5b0"
+#define MHP_BASE_DEVICE_PATH	"/dev/mhp"
+#define MHP0_DEVICE_PATH	"/dev/mhp0"
 
 #endif /* _DRV_PSC5B_H */

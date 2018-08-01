@@ -55,7 +55,6 @@
 #include <systemlib/err.h>
 
 #include <drivers/drv_hrt.h>
-#include <drivers/drv_psc5b.h>
 #include <drivers/device/device.h>
 #include <drivers/device/ringbuffer.h>
 
@@ -63,18 +62,19 @@
 #include <uORB/topics/mhp.h>
 
 #include <board_config.h>
+#include "../drv_mhp.h"
+#define PSC5B_DEVICE_PATH	"/dev/psc5b"
 
 
 #ifndef CONFIG_SCHED_WORKQUEUE
 # error This requires CONFIG_SCHED_WORKQUEUE.
 #endif
 
-#define PSC5B_DEFAULT_PORT		"/dev/can0"
 
 class PSC5B : public device::CAN
 {
 public:
-	PSC5B(const char *port = PSC5B_DEFAULT_PORT);
+	PSC5B();
 	virtual ~PSC5B();
 
 	virtual int 		init();
@@ -91,7 +91,6 @@ protected:
 	virtual int			probe();
 
 private:
-	char 				_port[20];
 	float				_dp0;
 	float				_dp1;
 	float				_dp2;
@@ -159,8 +158,8 @@ private:
  */
 extern "C" __EXPORT int psc5b_main(int argc, char *argv[]);
 
-PSC5B::PSC5B(const char *port) :
-	CAN("PSC5B", PSC5B0_DEVICE_PATH, 1),
+PSC5B::PSC5B() :
+	CAN("PSC5B", PSC5B_DEVICE_PATH, 1),
 	_dp0(-1.0f),
 	_dp1(-1.0f),
 	_dp2(-1.0f),
@@ -200,7 +199,7 @@ PSC5B::~PSC5B()
 	}
 
 	if (_class_instance != -1) {
-		unregister_class_devname(PSC5B_BASE_DEVICE_PATH, _class_instance);
+		unregister_class_devname(MHP_BASE_DEVICE_PATH, _class_instance);
 	}
 
 	/* free perf counters */
@@ -234,7 +233,7 @@ PSC5B::init()
 		return ret;
 	}
 
-	_class_instance = register_class_devname(PSC5B_BASE_DEVICE_PATH);
+	_class_instance = register_class_devname(MHP_BASE_DEVICE_PATH);
 
 	/* get a publish handle on the range finder topic */
 	struct mhp_s ds_report = {};
@@ -455,9 +454,9 @@ PSC5B::collect()
 	char readbuf[8];
 	unsigned readlen = sizeof(readbuf) - 1;
 	ret = ::read(_fd, &readbuf[0], readlen);
-//	ret = transfer(nullptr, 0, &val[0], 4);
 
 	if (ret < 0) {
+		PX4_ERR("no CAN response");
 		DEVICE_DEBUG("error reading from sensor: %d", ret);
 		perf_count(_comms_errors);
 		perf_end(_sample_perf);
@@ -467,6 +466,7 @@ PSC5B::collect()
 //    float humidity = ((val[0] & 0x3f) << 8 | val[1]) * (100.0 / 0x3fff);
 //    float temperature = (val[2] << 8 | (val[3] & 0xfc)) * (165.0 / 0xfffc) - 40;
 
+	PX4_ERR("CAN received: %s",readbuf);
 
 	struct mhp_s report;
 	report.timestamp = hrt_absolute_time();
@@ -602,7 +602,7 @@ start()
 	}
 
 	/* set the poll rate to default, starts automatic data collection */
-	fd = open(PSC5B0_DEVICE_PATH, O_RDONLY);
+	fd = open(PSC5B_DEVICE_PATH, O_RDONLY);
 
 	if (fd < 0) {
 		goto fail;
@@ -654,10 +654,10 @@ test()
 	ssize_t sz;
 	int ret;
 
-	int fd = open(PSC5B0_DEVICE_PATH, O_RDONLY);
+	int fd = open(PSC5B_DEVICE_PATH, O_RDONLY);
 
 	if (fd < 0) {
-		err(1, "%s open failed (try 'hyt271 start' if the driver is not running", PSC5B0_DEVICE_PATH);
+		err(1, "%s open failed (try 'hyt271 start' if the driver is not running", PSC5B_DEVICE_PATH);
 	}
 
 	/* do a simple demand read */
@@ -712,7 +712,7 @@ test()
 void
 reset()
 {
-	int fd = open(PSC5B0_DEVICE_PATH, O_RDONLY);
+	int fd = open(PSC5B_DEVICE_PATH, O_RDONLY);
 
 	if (fd < 0) {
 		err(1, "failed ");
