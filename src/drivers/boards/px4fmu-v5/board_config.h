@@ -763,6 +763,16 @@ __BEGIN_DECLS
 int stm32_sdio_initialize(void);
 
 /****************************************************************************************************
+ * Name: can_devinit
+ *
+ * Description:
+ *   Called to configure CAN chip select GPIO pins for the PX4FMU board.
+ *
+ ****************************************************************************************************/
+
+extern int can_devinit(void);
+
+/****************************************************************************************************
  * Name: stm32_spiinitialize
  *
  * Description:

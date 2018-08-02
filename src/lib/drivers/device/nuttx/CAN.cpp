@@ -70,28 +70,10 @@ CAN::init()
 //	unsigned bus_index;
 
 	// attach to the can bus
-	_dev = px4_caninitialize(get_device_bus());
-
-	if (_dev == nullptr) {
-		DEVICE_DEBUG("failed to init CAN");
-		ret = -ENOENT;
-		goto out;
-	}
-
-
-	// call the probe function to check whether the device is present
-	ret = probe();
+	ret = can_devinit();
 
 	if (ret != OK) {
-		DEVICE_DEBUG("probe failed");
-		goto out;
-	}
-
-	// do base class init, which will create device node, etc
-	ret = CDev::init();
-
-	if (ret != OK) {
-		DEVICE_DEBUG("cdev init failed");
+		DEVICE_DEBUG("can init failed");
 		goto out;
 	}
 
@@ -102,65 +84,8 @@ CAN::init()
 out:
 
 	if ((ret != OK) && (_dev != nullptr)) {
-//		px4_canbus_uninitialize(_dev);
 		_dev = nullptr;
 	}
-
-	return ret;
-}
-
-int
-CAN::transfer(const uint8_t *send, unsigned send_len, uint8_t *recv, unsigned recv_len)
-{
-	px4_can_msg_t msgv[2];
-	unsigned msgs;
-	int ret = PX4_ERROR;
-	unsigned retry_count = 0;
-
-	if (_dev == nullptr) {
-		PX4_ERR("CAN device not opened");
-		return 1;
-	}
-
-	do {
-		DEVICE_DEBUG("transfer out %p/%u  in %p/%u", send, send_len, recv, recv_len);
-		msgs = 0;
-
-		if (send_len > 0) {
-			msgv[msgs].frequency = _bus_clocks[get_device_bus() - 1];
-			msgv[msgs].addr = get_device_address();
-			msgv[msgs].flags = 0;
-			msgv[msgs].buffer = const_cast<uint8_t *>(send);
-			msgv[msgs].length = send_len;
-			msgs++;
-		}
-
-		if (recv_len > 0) {
-			msgv[msgs].frequency = _bus_clocks[get_device_bus() - 1];
-			msgv[msgs].addr = get_device_address();
-			msgv[msgs].flags = I2C_M_READ;
-			msgv[msgs].buffer = recv;
-			msgv[msgs].length = recv_len;
-			msgs++;
-		}
-
-		if (msgs == 0) {
-			return -EINVAL;
-		}
-
-		ret = I2C_TRANSFER(_dev, &msgv[0], msgs);
-
-		/* success */
-		if (ret == PX4_OK) {
-			break;
-		}
-
-		/* if we have already retried once, or we are going to give up, then reset the bus */
-		if ((retry_count >= 1) || (retry_count >= _retries)) {
-			I2C_RESET(_dev);
-		}
-
-	} while (retry_count++ < _retries);
 
 	return ret;
 }

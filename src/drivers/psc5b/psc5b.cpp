@@ -63,7 +63,7 @@
 
 #include <board_config.h>
 #include "../drv_mhp.h"
-#define PSC5B_DEVICE_PATH	"/dev/psc5b"
+#define PSC5B_DEVICE_PATH	"/dev/can0"
 
 
 #ifndef CONFIG_SCHED_WORKQUEUE
@@ -173,8 +173,8 @@ PSC5B::PSC5B() :
 	_class_instance(-1),
 	_orb_class_instance(-1),
 	_mhp_topic(nullptr),
-	_sample_perf(perf_alloc(PC_ELAPSED, "hyt271_read")),
-	_comms_errors(perf_alloc(PC_COUNT, "hyt271_com_err"))
+	_sample_perf(perf_alloc(PC_ELAPSED, "psc5b_read")),
+	_comms_errors(perf_alloc(PC_COUNT, "psc5b_com_err"))
 
 {
 	/* enable debug() calls */

@@ -46,14 +46,13 @@
 #include <errno.h>
 #include <debug.h>
 
-#include <nuttx/can.h>
+#include <nuttx/can/can.h>
 #include <arch/board/board.h>
 
 #include "chip.h"
 #include "up_arch.h"
 
 #include "chip.h"
-#include "stm32_can.h"
 #include "board_config.h"
 
 #ifdef CONFIG_CAN

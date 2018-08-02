@@ -33,6 +33,7 @@
 
 px4_add_library(drivers_board
 	#stm32_can.c # WIP
+	can.c
 	init.c
 	led.c
 	sdio.c
