@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- *   Copyright (c) 2013-2016 PX4 Development Team. All rights reserved.
+ *   Copyright (c) 2017 PX4 Development Team. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -31,21 +31,12 @@
  *
  ****************************************************************************/
 
-/**
- * @file hyt271.cpp
- *
- * @author Norman Wildmann <norman.wildmann@dlr.de>
- *
- * Driver for the HYT271 humidity and temperature sensor.
- * Default I2C address 0x28 is used.
- */
-
 #include <px4_config.h>
 #include <px4_defines.h>
 #include <px4_getopt.h>
 #include <px4_workqueue.h>
 
-#include <drivers/device/i2c.h>
+#include <drivers/device/can.h>
 
 #include <sys/types.h>
 #include <stdint.h>
@@ -59,40 +50,32 @@
 #include <stdio.h>
 #include <math.h>
 #include <unistd.h>
-#include <vector>
 
 #include <perf/perf_counter.h>
 #include <systemlib/err.h>
 
 #include <drivers/drv_hrt.h>
-#include <drivers/drv_meteo.h>
+#include <drivers/device/device.h>
 #include <drivers/device/ringbuffer.h>
 
 #include <uORB/uORB.h>
-#include <uORB/topics/meteo.h>
-#include <uORB/topics/debug_key_value.h>
+#include <uORB/topics/mhp.h>
 
 #include <board_config.h>
-
-/* Configuration Constants */
-#define HYT271_BUS 		PX4_I2C_BUS_EXPANSION3
-#define HYT271_BASEADDR 	0x28
-#define HYT271_DEVICE_PATH	"/dev/hyt271"
+#include "../drv_mhp.h"
+#define PSC5B_DEVICE_PATH	"/dev/psc5b"
 
 
 #ifndef CONFIG_SCHED_WORKQUEUE
 # error This requires CONFIG_SCHED_WORKQUEUE.
 #endif
 
-struct debug_key_value_s dbg;
-orb_advert_t 		pub_dbg;
 
-class HYT271 : public device::I2C
+class PSC5B : public device::CAN
 {
 public:
-	HYT271(int bus = HYT271_BUS,
-	      int address = HYT271_BASEADDR);
-	virtual ~HYT271();
+	PSC5B();
+	virtual ~PSC5B();
 
 	virtual int 		init();
 
@@ -108,22 +91,25 @@ protected:
 	virtual int			probe();
 
 private:
-	float				_temperature;
-	float				_humidity;
+	float				_dp0;
+	float				_dp1;
+	float				_dp2;
+	float				_dp3;
+	float				_dp4;
+	float				_dpS;
 	int                 _conversion_interval;
 	work_s				_work;
 	ringbuffer::RingBuffer  *_reports;
 	bool				_sensor_ok;
 	int				_measure_ticks;
+	int				_fd;
 	int				_class_instance;
 	int				_orb_class_instance;
 
-	orb_advert_t		_meteo_topic;
+	orb_advert_t		_mhp_topic;
 
 	perf_counter_t		_sample_perf;
 	perf_counter_t		_comms_errors;
-
-
 
 	/**
 	* Test whether the device supported by the driver is present at a
@@ -170,19 +156,23 @@ private:
 /*
  * Driver 'main' command.
  */
-extern "C" __EXPORT int hyt271_main(int argc, char *argv[]);
+extern "C" __EXPORT int psc5b_main(int argc, char *argv[]);
 
-HYT271::HYT271(int bus, int address) :
-	I2C("HYT271", HYT271_DEVICE_PATH, bus, address, 400000),
-	_temperature(-1.0f),
-	_humidity(-1.0f),
+PSC5B::PSC5B() :
+	CAN("PSC5B", PSC5B_DEVICE_PATH, 1),
+	_dp0(-1.0f),
+	_dp1(-1.0f),
+	_dp2(-1.0f),
+	_dp3(-1.0f),
+	_dp4(-1.0f),
+	_dpS(-1.0f),
 	_conversion_interval(-1),
 	_reports(nullptr),
 	_sensor_ok(false),
 	_measure_ticks(0),
 	_class_instance(-1),
 	_orb_class_instance(-1),
-	_meteo_topic(nullptr),
+	_mhp_topic(nullptr),
 	_sample_perf(perf_alloc(PC_ELAPSED, "hyt271_read")),
 	_comms_errors(perf_alloc(PC_COUNT, "hyt271_com_err"))
 
@@ -194,7 +184,7 @@ HYT271::HYT271(int bus, int address) :
 	memset(&_work, 0, sizeof(_work));
 }
 
-HYT271::~HYT271()
+PSC5B::~PSC5B()
 {
 	/* make sure we are truly inactive */
 	stop();
@@ -204,12 +194,12 @@ HYT271::~HYT271()
 		delete _reports;
 	}
 
-	if (_meteo_topic != nullptr) {
-		orb_unadvertise(_meteo_topic);
+	if (_mhp_topic != nullptr) {
+		orb_unadvertise(_mhp_topic);
 	}
 
 	if (_class_instance != -1) {
-		unregister_class_devname(METEO_BASE_DEVICE_PATH, _class_instance);
+		unregister_class_devname(MHP_BASE_DEVICE_PATH, _class_instance);
 	}
 
 	/* free perf counters */
@@ -218,38 +208,41 @@ HYT271::~HYT271()
 }
 
 int
-HYT271::init()
+PSC5B::init()
 {
 	int ret = PX4_ERROR;
 
-	_temperature = 0.0f;
-	_humidity = 0.0f;
+	_dp0 = 0.0f;
+	_dp1 = 0.0f;
+	_dp2 = 0.0f;
+	_dp3 = 0.0f;
+	_dp4 = 0.0f;
+	_dpS = 0.0f;
 	_conversion_interval = 1000000;
 
-	/* do I2C init (and probe) first */
-	if (I2C::init() != OK) {
+	/* do CAN init (and probe) first */
+	if (CAN::init() != OK) {
 		return ret;
 	}
 
 	/* allocate basic report buffers */
-	_reports = new ringbuffer::RingBuffer(2, sizeof(meteo_s));
+	_reports = new ringbuffer::RingBuffer(2, sizeof(mhp_s));
 
-	set_device_address(HYT271_BASEADDR);
 
 	if (_reports == nullptr) {
 		return ret;
 	}
 
-	_class_instance = register_class_devname(METEO_BASE_DEVICE_PATH);
+	_class_instance = register_class_devname(MHP_BASE_DEVICE_PATH);
 
 	/* get a publish handle on the range finder topic */
-	struct meteo_s ds_report = {};
+	struct mhp_s ds_report = {};
 
-	_meteo_topic = orb_advertise_multi(ORB_ID(meteo), &ds_report,
+	_mhp_topic = orb_advertise_multi(ORB_ID(mhp), &ds_report,
 			 &_orb_class_instance, ORB_PRIO_HIGH);
 
-	if (_meteo_topic == nullptr) {
-		DEVICE_LOG("failed to create meteo object. Did you start uOrb?");
+	if (_mhp_topic == nullptr) {
+		DEVICE_LOG("failed to create mhp object. Did you start uOrb?");
 	}
 
 	// Select altitude register
@@ -264,14 +257,14 @@ HYT271::init()
 }
 
 int
-HYT271::probe()
+PSC5B::probe()
 {
 	return measure();
 }
 
 
 int
-HYT271::ioctl(device::file_t *filp, int cmd, unsigned long arg)
+PSC5B::ioctl(device::file_t *filp, int cmd, unsigned long arg)
 {
 	switch (cmd) {
 
@@ -366,15 +359,15 @@ HYT271::ioctl(device::file_t *filp, int cmd, unsigned long arg)
 
 	default:
 		/* give it to the superclass */
-		return I2C::ioctl(filp, cmd, arg);
+		return CDev::ioctl(filp, cmd, arg);
 	}
 }
 
 ssize_t
-HYT271::read(device::file_t *filp, char *buffer, size_t buflen)
+PSC5B::read(device::file_t *filp, char *buffer, size_t buflen)
 {
-	unsigned count = buflen / sizeof(struct meteo_s);
-	struct meteo_s *rbuf = reinterpret_cast<struct meteo_s *>(buffer);
+	unsigned count = buflen / sizeof(struct mhp_s);
+	struct mhp_s *rbuf = reinterpret_cast<struct mhp_s *>(buffer);
 	int ret = 0;
 
 	/* buffer must be large enough */
@@ -431,57 +424,67 @@ HYT271::read(device::file_t *filp, char *buffer, size_t buflen)
 }
 
 int
-HYT271::measure()
+PSC5B::measure()
 {
-	int ret;
+	int ret=0;
 
-	uint8_t cmd = 0;
-	ret = transfer(&cmd, 1, nullptr, 0);
-
-	if (OK != ret) {
-		perf_count(_comms_errors);
-		DEVICE_DEBUG("i2c::transfer returned %d", ret);
-		return ret;
-	}
-
-	ret = OK;
+//	uint8_t cmd = 0;
+//	ret = transfer(&cmd, 1, nullptr, 0);
+//
+//	if (OK != ret) {
+//		perf_count(_comms_errors);
+//		DEVICE_DEBUG("can::transfer returned %d", ret);
+//		return ret;
+//	}
+//
+//	ret = OK;
 
 	return ret;
 }
 
 int
-HYT271::collect()
+PSC5B::collect()
 {
 	int	ret = -EIO;
 
 	/* read from the sensor */
-	uint8_t val[4] = {0, 0, 0, 0};
+//	uint8_t val[4] = {0, 0, 0, 0};
 	perf_begin(_sample_perf);
 
-	ret = transfer(nullptr, 0, &val[0], 4);
+	char readbuf[8];
+	unsigned readlen = sizeof(readbuf) - 1;
+	ret = ::read(_fd, &readbuf[0], readlen);
 
 	if (ret < 0) {
+		PX4_ERR("no CAN response");
 		DEVICE_DEBUG("error reading from sensor: %d", ret);
 		perf_count(_comms_errors);
 		perf_end(_sample_perf);
 		return ret;
 	}
 
-    float humidity = ((val[0] & 0x3f) << 8 | val[1]) * (100.0 / 0x3fff);
-    float temperature = (val[2] << 8 | (val[3] & 0xfc)) * (165.0 / 0xfffc) - 40;
+//    float humidity = ((val[0] & 0x3f) << 8 | val[1]) * (100.0 / 0x3fff);
+//    float temperature = (val[2] << 8 | (val[3] & 0xfc)) * (165.0 / 0xfffc) - 40;
 
+	PX4_ERR("CAN received: %s",readbuf);
 
-	struct meteo_s report;
+	struct mhp_s report;
 	report.timestamp = hrt_absolute_time();
-	report.humidity = humidity;
-	report.temperature = temperature;
+//	report.dp0 = dp0;
+//	report.dp1 = dp1;
+//	report.dp2 = dp2;
+//	report.dp3 = dp3;
+//	report.dp4 = dp4;
+//	report.dpS = dpS;
 	/* TODO: set proper ID */
 	//report.id = 333;
 
 	/* publish it, if we are the primary */
-	if (_meteo_topic != nullptr) {
-		orb_publish(ORB_ID(meteo), _meteo_topic, &report);
-//		PX4_WARN("meteo published");
+	if (_mhp_topic != nullptr) {
+//		dbg.value = temperature;
+//		orb_publish(ORB_ID(debug_key_value), pub_dbg, &dbg);
+		orb_publish(ORB_ID(mhp), _mhp_topic, &report);
+		PX4_WARN("meteo published");
 	}
 
 	_reports->force(&report);
@@ -496,7 +499,7 @@ HYT271::collect()
 }
 
 void
-HYT271::start()
+PSC5B::start()
 {
 	/* reset the report ring and state machine */
 	_reports->flush();
@@ -505,25 +508,25 @@ HYT271::start()
 	measure();
 
 	/* schedule a cycle to start things */
-	work_queue(HPWORK, &_work, (worker_t)&HYT271::cycle_trampoline, this, USEC2TICK(_conversion_interval));
+	work_queue(HPWORK, &_work, (worker_t)&PSC5B::cycle_trampoline, this, USEC2TICK(_conversion_interval));
 }
 
 void
-HYT271::stop()
+PSC5B::stop()
 {
 	work_cancel(HPWORK, &_work);
 }
 
 void
-HYT271::cycle_trampoline(void *arg)
+PSC5B::cycle_trampoline(void *arg)
 {
-	HYT271 *dev = (HYT271 *)arg;
+	PSC5B *dev = (PSC5B *)arg;
 
 	dev->cycle();
 }
 
 void
-HYT271::cycle()
+PSC5B::cycle()
 {
 
 	/* trigger a measurement */
@@ -546,14 +549,14 @@ HYT271::cycle()
 	/* schedule a fresh cycle call when the measurement is done */
 	work_queue(HPWORK,
 		   &_work,
-		   (worker_t)&HYT271::cycle_trampoline,
+		   (worker_t)&PSC5B::cycle_trampoline,
 		   this,
 		   USEC2TICK(_conversion_interval));
 
 }
 
 void
-HYT271::print_info()
+PSC5B::print_info()
 {
 	perf_print_counter(_sample_perf);
 	perf_print_counter(_comms_errors);
@@ -564,10 +567,10 @@ HYT271::print_info()
 /**
  * Local functions in support of the shell command.
  */
-namespace hyt271
+namespace psc5b
 {
 
-HYT271	*g_dev;
+PSC5B	*g_dev;
 
 void	start();
 void	stop();
@@ -588,7 +591,7 @@ start()
 	}
 
 	/* create the driver */
-	g_dev = new HYT271(HYT271_BUS);
+	g_dev = new PSC5B();
 
 	if (g_dev == nullptr) {
 		goto fail;
@@ -599,7 +602,7 @@ start()
 	}
 
 	/* set the poll rate to default, starts automatic data collection */
-	fd = open(HYT271_DEVICE_PATH, O_RDONLY);
+	fd = open(PSC5B_DEVICE_PATH, O_RDONLY);
 
 	if (fd < 0) {
 		goto fail;
@@ -647,14 +650,14 @@ void stop()
 void
 test()
 {
-	struct meteo_s report;
+	struct mhp_s report;
 	ssize_t sz;
 	int ret;
 
-	int fd = open(HYT271_DEVICE_PATH, O_RDONLY);
+	int fd = open(PSC5B_DEVICE_PATH, O_RDONLY);
 
 	if (fd < 0) {
-		err(1, "%s open failed (try 'hyt271 start' if the driver is not running", HYT271_DEVICE_PATH);
+		err(1, "%s open failed (try 'hyt271 start' if the driver is not running", PSC5B_DEVICE_PATH);
 	}
 
 	/* do a simple demand read */
@@ -709,7 +712,7 @@ test()
 void
 reset()
 {
-	int fd = open(HYT271_DEVICE_PATH, O_RDONLY);
+	int fd = open(PSC5B_DEVICE_PATH, O_RDONLY);
 
 	if (fd < 0) {
 		err(1, "failed ");
@@ -746,16 +749,13 @@ info()
 } /* namespace */
 
 int
-hyt271_main(int argc, char *argv[])
+psc5b_main(int argc, char *argv[])
 {
 	// check for optional arguments
 	int ch;
 	int myoptind = 1;
 	const char *myoptarg = nullptr;
 
-	strncpy(dbg.key, "debug_test", sizeof(dbg.key));
-	dbg.value = 0.0f;
-	pub_dbg = orb_advertise(ORB_ID(debug_key_value), &dbg);
 
 	while ((ch = px4_getopt(argc, argv, "R:", &myoptind, &myoptarg)) != EOF) {
 		switch (ch) {
@@ -768,37 +768,38 @@ hyt271_main(int argc, char *argv[])
 	 * Start/load the driver.
 	 */
 	if (!strcmp(argv[myoptind], "start")) {
-		hyt271::start();
+		psc5b::start();
 	}
 
 	/*
 	 * Stop the driver
 	 */
 	if (!strcmp(argv[myoptind], "stop")) {
-		hyt271::stop();
+		psc5b::stop();
 	}
 
 	/*
 	 * Test the driver/device.
 	 */
 	if (!strcmp(argv[myoptind], "test")) {
-		hyt271::test();
+		psc5b::test();
 	}
 
 	/*
 	 * Reset the driver.
 	 */
 	if (!strcmp(argv[myoptind], "reset")) {
-		hyt271::reset();
+		psc5b::reset();
 	}
 
 	/*
 	 * Print driver information.
 	 */
 	if (!strcmp(argv[myoptind], "info") || !strcmp(argv[myoptind], "status")) {
-		hyt271::info();
+		psc5b::info();
 	}
 
 	PX4_ERR("unrecognized command, try 'start', 'test', 'reset' or 'info'");
 	return PX4_ERROR;
 }
+

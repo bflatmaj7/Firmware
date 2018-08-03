@@ -176,6 +176,9 @@ if (TARGET parameters_xml AND TARGET airframes_xml)
 					"COM${port}")
 			endforeach()
 		endif()
+		list(APPEND serial_ports
+			COM5
+			)
 		px4_join(OUT serial_ports LIST "${serial_ports}" GLUE ",")
 		add_custom_target(upload
 			COMMAND ${PYTHON_EXECUTABLE}

@@ -55,10 +55,6 @@ class __EXPORT CAN : public CDev
 
 public:
 
-//	static int	set_bus_clock(unsigned bus, unsigned clock_hz);
-//
-//	static unsigned	int	_bus_clocks[BOARD_NUMBER_I2C_BUSES];
-
 protected:
 //	/**
 //	 * The number of times a read or write operation will be retried on
@@ -71,14 +67,12 @@ protected:
 //	 *
 //	 * @param name		Driver name
 //	 * @param devname	Device node name
-//	 * @param bus		I2C bus on which the device lives
-//	 * @param address	I2C bus address, or zero if set_address will be used
-//	 * @param frequency	I2C bus frequency for the device (currently not used)
 //	 */
-	CAN(const char *name, const char *devname, int bus);
+	CAN(const char *name, const char *devname);
 	virtual ~CAN();
 
-	virtual int	init();
+	virtual int	init(const char *port);
+	virtual int	receive(void);
 
 	/**
 	 * Check for the presence of the device on the bus.
@@ -103,6 +97,8 @@ protected:
 
 private:
 	px4_can_dev_t		*_dev{nullptr};
+	bool initialized = false;
+
 
 	CAN(const device::CAN &);
 	CAN operator=(const device::CAN &);

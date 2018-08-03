@@ -42,18 +42,23 @@
  ************************************************************************************/
 
 #include <px4_config.h>
+#include <px4_log.h>
 
-#include <errno.h>
+#include <stdint.h>
+#include <stdbool.h>
 #include <debug.h>
+#include <unistd.h>
 
 #include <nuttx/can/can.h>
 #include <arch/board/board.h>
+#include <systemlib/px4_macros.h>
 
-#include "chip.h"
-#include "up_arch.h"
-
-#include "chip.h"
+#include <up_arch.h>
+#include <chip.h>
+#include <stm32_gpio.h>
 #include "board_config.h"
+#include <systemlib/err.h>
+//#include "stm32_can.h"
 
 #ifdef CONFIG_CAN
 
@@ -62,12 +67,12 @@
  ************************************************************************************/
 /* Configuration ********************************************************************/
 
-#if defined(CONFIG_STM32_CAN1) && defined(CONFIG_STM32_CAN2)
+#if defined(CONFIG_STM32F7_CAN1) && defined(CONFIG_STM32F7_CAN2)
 #  warning "Both CAN1 and CAN2 are enabled.  Assuming only CAN1."
-#  undef CONFIG_STM32_CAN2
+#  undef CONFIG_STM32F7_CAN2
 #endif
 
-#ifdef CONFIG_STM32_CAN1
+#ifdef CONFIG_STM32F7_CAN1
 #  define CAN_PORT 1
 #else
 #  define CAN_PORT 2
@@ -90,7 +95,7 @@
  *
  ************************************************************************************/
 
-int can_devinit(void)
+__EXPORT int can_devinit(void)
 {
 	static bool initialized = false;
 	struct can_dev_s *can;

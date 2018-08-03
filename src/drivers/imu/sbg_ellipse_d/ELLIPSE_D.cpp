@@ -951,10 +951,6 @@ int ellipse_d_parser(char c, char *parserbuf, unsigned *parserbuf_index, enum EL
 		break;
 	}
 
-#ifdef SF0X_DEBUG
-	printf("state: SF0X_PARSE_STATE%s\n", parser_state[*state]);
-#endif
-
 	return ret;
 }
 

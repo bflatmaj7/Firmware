@@ -43,12 +43,13 @@
 namespace device
 {
 
-CAN::CAN(const char *name, const char *devname) :
+CAN::CAN(const char *name, const char *devname, int bus) :
 	CDev(name, devname)
 {
 	DEVICE_DEBUG("CAN::CAN name = %s devname = %s", name, devname);
 	// fill in _device_id fields for a I2C device
 	_device_id.devid_s.bus_type = DeviceBusType_CAN;
+	_device_id.devid_s.bus = bus;
 	// devtype needs to be filled in by the driver
 	_device_id.devid_s.devtype = 0;
 }
@@ -63,66 +64,49 @@ CAN::~CAN()
 
 
 int
-CAN::init(const char *port)
+CAN::init()
 {
 	int ret = PX4_ERROR;
+//	unsigned bus_index;
 
-	/* Check if we have already initialized */
+	// attach to the can bus
+	_dev = px4_caninitialize(get_device_bus());
 
-	if (!initialized) {
-		/* Call stm32_caninitialize() to get an instance of the CAN interface */
-
-		_dev = px4_caninitialize(1);
-
-		if (_dev == NULL) {
-			DEVICE_DEBUG("can init failed");
-			goto out;
-		}
-
-		/* Register the CAN driver at "/dev/can0" */
-
-		ret = can_register(port, _dev);
-
-		if (ret < 0) {
-			DEVICE_DEBUG("can init failed");
-			goto out;
-		}
-
-		/* Now we are initialized */
-
-		initialized = true;
-	}
-
-	return OK;
-	if (ret != OK) {
-		DEVICE_DEBUG("can init failed");
+	if (_dev == nullptr) {
+		DEVICE_DEBUG("failed to init CAN");
+		ret = -ENOENT;
 		goto out;
 	}
+
+
+	// call the probe function to check whether the device is present
+	ret = probe();
+
+	if (ret != OK) {
+		DEVICE_DEBUG("probe failed");
+		goto out;
+	}
+
+	// do base class init, which will create device node, etc
+	ret = CDev::init();
+
+	if (ret != OK) {
+		DEVICE_DEBUG("cdev init failed");
+		goto out;
+	}
+
+//	// tell the world where we are
+//	DEVICE_LOG("on CAN bus %d at 0x%02x (bus: %u KHz, max: %u KHz)",
+//		   get_device_bus(), get_device_address(), _bus_clocks[bus_index] / 1000, _frequency / 1000);
 
 out:
 
 	if ((ret != OK) && (_dev != nullptr)) {
+//		px4_canbus_uninitialize(_dev);
 		_dev = nullptr;
 	}
 
 	return ret;
-}
-
-int
-CAN::receive(void){
-//	int nbytes;
-//
-//	struct px4_can_msg_t rxmsg;
-//
-//	unsigned readlen = sizeof(struct px4_can_msg_t);
-//	nbytes = read(_dev, &rxmsg, readlen);
-//
-//	if (nbytes<=0){
-//		return PX4_ERROR;
-//	}
-//
-//	return OK;
-	return 0;
 }
 
 

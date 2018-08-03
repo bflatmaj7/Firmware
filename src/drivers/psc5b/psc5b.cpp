@@ -74,7 +74,7 @@
 class PSC5B : public device::CAN
 {
 public:
-	PSC5B();
+	PSC5B(const char *port = PSC5B_DEVICE_PATH);
 	virtual ~PSC5B();
 
 	virtual int 		init();
@@ -88,9 +88,9 @@ public:
 	void				print_info();
 
 protected:
-	virtual int			probe();
 
 private:
+	char 				_port[20];
 	float				_dp0;
 	float				_dp1;
 	float				_dp2;
@@ -103,6 +103,7 @@ private:
 	bool				_sensor_ok;
 	int				_measure_ticks;
 	int				_fd;
+	hrt_abstime			_last_read;
 	int				_class_instance;
 	int				_orb_class_instance;
 
@@ -158,8 +159,8 @@ private:
  */
 extern "C" __EXPORT int psc5b_main(int argc, char *argv[]);
 
-PSC5B::PSC5B() :
-	CAN("PSC5B", PSC5B_DEVICE_PATH, 1),
+PSC5B::PSC5B(const char *port) :
+	CAN("PSC5B", MHP0_DEVICE_PATH),
 	_dp0(-1.0f),
 	_dp1(-1.0f),
 	_dp2(-1.0f),
@@ -170,6 +171,7 @@ PSC5B::PSC5B() :
 	_reports(nullptr),
 	_sensor_ok(false),
 	_measure_ticks(0),
+	_last_read(0),
 	_class_instance(-1),
 	_orb_class_instance(-1),
 	_mhp_topic(nullptr),
@@ -177,6 +179,24 @@ PSC5B::PSC5B() :
 	_comms_errors(perf_alloc(PC_COUNT, "psc5b_com_err"))
 
 {
+	/* store port name */
+	strncpy(_port, port, sizeof(_port));
+	/* enforce null termination */
+	_port[sizeof(_port) - 1] = '\0';
+
+	/* do CAN init (and probe) first */
+	if (CAN::init(_port) != OK) {
+		PX4_ERR("can init failed");
+		return;
+	}
+
+	/* open fd */
+	_fd = ::open(_port, O_RDWR);
+
+	if (_fd < 0) {
+		warnx("FAIL: laser fd");
+	}
+
 	/* enable debug() calls */
 	_debug_enabled = false;
 
@@ -220,16 +240,17 @@ PSC5B::init()
 	_dpS = 0.0f;
 	_conversion_interval = 1000000;
 
-	/* do CAN init (and probe) first */
-	if (CAN::init() != OK) {
-		return ret;
-	}
+	/* do regular cdev init */
+	ret = CDev::init();
+
+	if (ret != OK) { return ret; }
 
 	/* allocate basic report buffers */
 	_reports = new ringbuffer::RingBuffer(2, sizeof(mhp_s));
 
-
 	if (_reports == nullptr) {
+		warnx("mem err");
+		ret = -1;
 		return ret;
 	}
 
@@ -245,23 +266,12 @@ PSC5B::init()
 		DEVICE_LOG("failed to create mhp object. Did you start uOrb?");
 	}
 
-	// Select altitude register
-	int ret2 = measure();
-
-	if (ret2 == 0) {
-		ret = OK;
-		_sensor_ok = true;
-	}
+	/* close the fd */
+	::close(_fd);
+	_fd = -1;
 
 	return ret;
 }
-
-int
-PSC5B::probe()
-{
-	return measure();
-}
-
 
 int
 PSC5B::ioctl(device::file_t *filp, int cmd, unsigned long arg)
@@ -395,49 +405,24 @@ PSC5B::read(device::file_t *filp, char *buffer, size_t buflen)
 	}
 
 	/* manual measurement - run one conversion */
-	do {
-		_reports->flush();
-
-		/* trigger a measurement */
-		if (OK != measure()) {
-			ret = -EIO;
-			break;
-		}
-
-		/* wait for it to complete */
-		usleep(_conversion_interval);
-
-		/* run the collection phase */
-		if (OK != collect()) {
-			ret = -EIO;
-			break;
-		}
-
-		/* state machine will have generated a report, copy it out */
-		if (_reports->get(rbuf)) {
-			ret = sizeof(*rbuf);
-		}
-
-	} while (0);
-
-	return ret;
-}
-
-int
-PSC5B::measure()
-{
-	int ret=0;
-
-//	uint8_t cmd = 0;
-//	ret = transfer(&cmd, 1, nullptr, 0);
+//	do {
+//		_reports->flush();
 //
-//	if (OK != ret) {
-//		perf_count(_comms_errors);
-//		DEVICE_DEBUG("can::transfer returned %d", ret);
-//		return ret;
-//	}
+//		/* wait for it to complete */
+//		usleep(_conversion_interval);
 //
-//	ret = OK;
+//		/* run the collection phase */
+//		if (OK != collect()) {
+//			ret = -EIO;
+//			break;
+//		}
+//
+//		/* state machine will have generated a report, copy it out */
+//		if (_reports->get(rbuf)) {
+//			ret = sizeof(*rbuf);
+//		}
+//
+//	} while (0);
 
 	return ret;
 }
@@ -448,53 +433,61 @@ PSC5B::collect()
 	int	ret = -EIO;
 
 	/* read from the sensor */
-//	uint8_t val[4] = {0, 0, 0, 0};
+//	uint8_t val[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 	perf_begin(_sample_perf);
+
+	/* clear buffer if last read was too long ago */
+	int64_t read_elapsed = hrt_elapsed_time(&_last_read);
 
 	char readbuf[8];
 	unsigned readlen = sizeof(readbuf) - 1;
 	ret = ::read(_fd, &readbuf[0], readlen);
+	PX4_WARN("read result: %d", ret);
 
-	if (ret < 0) {
-		PX4_ERR("no CAN response");
-		DEVICE_DEBUG("error reading from sensor: %d", ret);
+	if (ret > 0) {
+		PX4_WARN("read success: %s", readbuf);
+		struct mhp_s report;
+		report.timestamp = hrt_absolute_time();
+	//	report.dp0 = dp0;
+	//	report.dp1 = dp1;
+	//	report.dp2 = dp2;
+	//	report.dp3 = dp3;
+	//	report.dp4 = dp4;
+	//	report.dpS = dpS;
+		/* TODO: set proper ID */
+		//report.id = 333;
+
+		/* publish it, if we are the primary */
+		if (_mhp_topic != nullptr) {
+			orb_publish(ORB_ID(mhp), _mhp_topic, &report);
+		}
+		_last_read = hrt_absolute_time();
+
+		_reports->force(&report);
+
+		perf_end(_sample_perf);
+	} else if (ret < 0) {
+		DEVICE_DEBUG("read err: %d", ret);
+		PX4_WARN("read err: %d", ret);
 		perf_count(_comms_errors);
 		perf_end(_sample_perf);
-		return ret;
+
+		/* only throw an error if we time out */
+		if (read_elapsed > (_conversion_interval * 2)) {
+			PX4_WARN("test1");
+			return ret;
+		} else {
+			PX4_WARN("test2");
+			return -EAGAIN;
+		}
+	} else {
+		PX4_WARN("test3");
+		return -EAGAIN;
 	}
-
-//    float humidity = ((val[0] & 0x3f) << 8 | val[1]) * (100.0 / 0x3fff);
-//    float temperature = (val[2] << 8 | (val[3] & 0xfc)) * (165.0 / 0xfffc) - 40;
-
-	PX4_ERR("CAN received: %s",readbuf);
-
-	struct mhp_s report;
-	report.timestamp = hrt_absolute_time();
-//	report.dp0 = dp0;
-//	report.dp1 = dp1;
-//	report.dp2 = dp2;
-//	report.dp3 = dp3;
-//	report.dp4 = dp4;
-//	report.dpS = dpS;
-	/* TODO: set proper ID */
-	//report.id = 333;
-
-	/* publish it, if we are the primary */
-	if (_mhp_topic != nullptr) {
-//		dbg.value = temperature;
-//		orb_publish(ORB_ID(debug_key_value), pub_dbg, &dbg);
-		orb_publish(ORB_ID(mhp), _mhp_topic, &report);
-		PX4_WARN("meteo published");
-	}
-
-	_reports->force(&report);
 
 	/* notify anyone waiting for data */
 	poll_notify(POLLIN);
 
-	ret = OK;
-
-	perf_end(_sample_perf);
 	return ret;
 }
 
@@ -504,11 +497,8 @@ PSC5B::start()
 	/* reset the report ring and state machine */
 	_reports->flush();
 
-	/* set register to '0' */
-	measure();
-
 	/* schedule a cycle to start things */
-	work_queue(HPWORK, &_work, (worker_t)&PSC5B::cycle_trampoline, this, USEC2TICK(_conversion_interval));
+	work_queue(HPWORK, &_work, (worker_t)&PSC5B::cycle_trampoline, this, 1);
 }
 
 void
@@ -520,7 +510,7 @@ PSC5B::stop()
 void
 PSC5B::cycle_trampoline(void *arg)
 {
-	PSC5B *dev = (PSC5B *)arg;
+	PSC5B *dev = static_cast<PSC5B *>(arg);
 
 	dev->cycle();
 }
@@ -529,21 +519,16 @@ void
 PSC5B::cycle()
 {
 
-	/* trigger a measurement */
-	if (OK != measure()) {
-		DEVICE_DEBUG("measure error");
-		return;
+	/* fds initialized? */
+	if (_fd < 0) {
+		/* open fd */
+		_fd = ::open(_port, O_RDWR);
 	}
-
-	/* wait for it to complete */
-	usleep(100000);
 
 	/* Collect results */
 	if (OK != collect()) {
+		PX4_ERR("collect failed");
 		DEVICE_DEBUG("collection error");
-		/* if error restart the measurement state machine */
-		start();
-		return;
 	}
 
 	/* schedule a fresh cycle call when the measurement is done */
@@ -572,7 +557,7 @@ namespace psc5b
 
 PSC5B	*g_dev;
 
-void	start();
+void	start(const char *port);
 void	stop();
 void	test();
 void	reset();
@@ -582,7 +567,7 @@ void	info();
  * Start the driver.
  */
 void
-start()
+start(const char *port)
 {
 	int fd = -1;
 
@@ -591,7 +576,7 @@ start()
 	}
 
 	/* create the driver */
-	g_dev = new PSC5B();
+	g_dev = new PSC5B(port);
 
 	if (g_dev == nullptr) {
 		goto fail;
@@ -602,18 +587,16 @@ start()
 	}
 
 	/* set the poll rate to default, starts automatic data collection */
-	fd = open(PSC5B_DEVICE_PATH, O_RDONLY);
+	fd = open(MHP0_DEVICE_PATH, O_RDONLY);
 
 	if (fd < 0) {
 		goto fail;
 	}
 
 	if (ioctl(fd, SENSORIOCSPOLLRATE, SENSOR_POLLRATE_DEFAULT) < 0) {
-		::close(fd);
 		goto fail;
 	}
 
-	::close(fd);
 	exit(0);
 
 fail:
@@ -654,10 +637,10 @@ test()
 	ssize_t sz;
 	int ret;
 
-	int fd = open(PSC5B_DEVICE_PATH, O_RDONLY);
+	int fd = open(MHP0_DEVICE_PATH, O_RDONLY);
 
 	if (fd < 0) {
-		err(1, "%s open failed (try 'hyt271 start' if the driver is not running", PSC5B_DEVICE_PATH);
+		err(1, "%s open failed (try 'psc5b start' if the driver is not running", PSC5B_DEVICE_PATH);
 	}
 
 	/* do a simple demand read */
@@ -684,14 +667,16 @@ test()
 		ret = poll(&fds, 1, 2000);
 
 		if (ret != 1) {
-			errx(1, "timed out waiting for sensor data");
+			warnx("timed out");
+			break;
 		}
 
 		/* now go get it */
 		sz = read(fd, &report, sizeof(report));
 
 		if (sz != sizeof(report)) {
-			err(1, "periodic read failed");
+			warnx("read failed: got %d vs exp. %d", sz, sizeof(report));
+			break;
 		}
 
 		print_message(report);
@@ -702,7 +687,6 @@ test()
 		errx(1, "failed to set default poll rate");
 	}
 
-	::close(fd);
 	errx(0, "PASS");
 }
 
@@ -712,7 +696,7 @@ test()
 void
 reset()
 {
-	int fd = open(PSC5B_DEVICE_PATH, O_RDONLY);
+	int fd = open(MHP0_DEVICE_PATH, O_RDONLY);
 
 	if (fd < 0) {
 		err(1, "failed ");
@@ -726,7 +710,6 @@ reset()
 		err(1, "driver poll restart failed");
 	}
 
-	::close(fd);
 	exit(0);
 }
 
@@ -768,7 +751,12 @@ psc5b_main(int argc, char *argv[])
 	 * Start/load the driver.
 	 */
 	if (!strcmp(argv[myoptind], "start")) {
-		psc5b::start();
+		if (argc > myoptind + 1) {
+			psc5b::start(argv[myoptind + 1]);
+
+		} else {
+			psc5b::start(PSC5B_DEVICE_PATH);
+		}
 	}
 
 	/*
