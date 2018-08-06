@@ -4722,5 +4722,18 @@
       <field type="float" name="vew">East-West velocity</field>
       <field type="float" name="vud">Up-Down velocity</field>
     </message>
+    <message id="335" name="MHP">
+      <description>Inertial navigation system measurements</description>
+      <field type="uint64_t" name="time_usec" units="us">Timestamp (microseconds since system boot or since UNIX epoch).</field>
+      <field type="float" name="dp0">diff. pressure, port 0</field>
+      <field type="float" name="dp1">diff. pressure, port 1</field>
+      <field type="float" name="dp2">diff. pressure, port 2</field>
+      <field type="float" name="dp3">diff. pressure, port 3</field>
+      <field type="float" name="dp4">diff. pressure, port 4</field>
+      <field type="float" name="dpS">diff. pressure, static port</field>
+      <field type="float" name="tas">true airspeed</field>
+      <field type="float" name="aoa">angle of attack</field>
+      <field type="float" name="aos">angle of sideslip</field>
+    </message>
   </messages>
 </mavlink>

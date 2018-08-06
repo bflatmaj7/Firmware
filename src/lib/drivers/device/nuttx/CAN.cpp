@@ -73,6 +73,10 @@ CAN::init(const char *port)
 		/* Call stm32_caninitialize() to get an instance of the CAN interface */
 
 		_dev = px4_caninitialize(1);
+		px4_arch_configgpio(GPIO_CAN1_RX);
+		px4_arch_configgpio(GPIO_CAN1_TX);
+		px4_arch_configgpio(GPIO_CAN2_RX | GPIO_PULLUP);
+		px4_arch_configgpio(GPIO_CAN2_TX);
 
 		if (_dev == NULL) {
 			DEVICE_DEBUG("can init failed");
@@ -109,20 +113,39 @@ out:
 }
 
 int
-CAN::receive(void){
+CAN::receive(int fd, FAR uint8_t *data){
+	int ret = PX4_OK;
+//	ret = can_read(fd,data,255);
+	return ret;
+}
+
+
+int
+CAN::transmit(int fd, char * buf,size_t len){
 //	int nbytes;
+//	size_t msgsize;
+
+//	struct px4_can_msg_t txmsg;
 //
-//	struct px4_can_msg_t rxmsg;
+//    txmsg.cm_hdr.ch_id     = 99;
+//    txmsg.cm_hdr.ch_rtr    = false;
+//    txmsg.cm_hdr.ch_dlc    = len;
 //
-//	unsigned readlen = sizeof(struct px4_can_msg_t);
-//	nbytes = read(_dev, &rxmsg, readlen);
+//    for (unsigned i = 0; i < len; i++)
+//	{
+//	  txmsg.cm_data[i] = buf[i];
+//	}
+
+	/* Send the TX message */
+
+//	msgsize = CAN_MSGLEN(len);
+//	nbytes = write(fd, buf,len);
 //
 //	if (nbytes<=0){
 //		return PX4_ERROR;
 //	}
-//
-//	return OK;
-	return 0;
+
+	return OK;
 }
 
 

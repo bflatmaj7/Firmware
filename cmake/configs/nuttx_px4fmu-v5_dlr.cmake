@@ -8,7 +8,7 @@ set(config_module_list
 	# Board support modules
 	#
 	drivers/hyt271
-	drivers/imu/sbg_ellipse_d
+	#drivers/imu/sbg_ellipse_d
 	drivers/psc5b
 	#drivers/barometer
 	#drivers/differential_pressure
@@ -22,7 +22,7 @@ set(config_module_list
 	#drivers/imu/bmi055
 	#drivers/imu/bmi160
 	#drivers/camera_trigger
-	drivers/gps
+	#drivers/gps
 	#drivers/irlock
 	#drivers/mkblctrl
 	#drivers/imu/mpu6000
@@ -83,13 +83,13 @@ set(config_module_list
 	#
 	modules/commander
 	modules/events
-	modules/gpio_led
+	#modules/gpio_led
 	modules/land_detector
 	modules/load_mon
 	modules/mavlink
 	modules/navigator
 	#modules/uavcan
-	modules/camera_feedback
+	#modules/camera_feedback
 
 	#
 	# Estimation modules

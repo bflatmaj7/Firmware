@@ -48,7 +48,7 @@ namespace device __EXPORT
 {
 
 /**
- * Abstract class for character device on I2C
+ * Abstract class for character device on CAN
  */
 class __EXPORT CAN : public CDev
 {
@@ -72,7 +72,8 @@ protected:
 	virtual ~CAN();
 
 	virtual int	init(const char *port);
-	virtual int	receive(void);
+	virtual int	receive(int fd, FAR uint8_t *data);
+	virtual int transmit(int fd, char * buf,size_t len);
 
 	/**
 	 * Check for the presence of the device on the bus.
