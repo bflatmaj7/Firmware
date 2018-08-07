@@ -254,7 +254,7 @@ int ELLIPSE_D::init()
 	_vns = 0.0f;
 	_vew = 0.0f;
 	_vud = 0.0f;
-	_conversion_interval =	1000000;
+	_conversion_interval =	10000;
 	/* status */
 	int ret = 0;
 
@@ -468,6 +468,7 @@ ELLIPSE_D::collect()
 
 	if (ret > 0) {
 //		PX4_WARN("serial data received: %d.",ret);
+		::write(_fd,"serial data received",20);
 		bool valid = false;
 
 		for (int i = 0; i < ret; i++) {
@@ -475,7 +476,6 @@ ELLIPSE_D::collect()
 				if (_msg.status == MSG_COMPLETE){
 					ret = handle_msg(&_msg);
 					_msg.status = MSG_EMPTY;
-					_last_read = hrt_absolute_time();
 				}
 				valid = true;
 			}
@@ -484,6 +484,7 @@ ELLIPSE_D::collect()
 		if (!valid) {
 			PX4_WARN("data not valid");
 		}
+		_last_read = hrt_absolute_time();
 
 //		DEVICE_DEBUG("raw: %s, valid: %s", _linebuf, ((valid) ? "OK" : "NO"));
 //		PX4_WARN("raw: %s, valid: %s", _linebuf, ((valid) ? "OK" : "NO"));
@@ -493,8 +494,9 @@ ELLIPSE_D::collect()
 		PX4_WARN("no data received.");
 		return -EAGAIN;
 	} else if (ret < 0) {
-		DEVICE_DEBUG("read err: %d", ret);
-		PX4_WARN("read err: %d", ret);
+		::write(_fd,"serial read error",17);
+//		DEVICE_DEBUG("read err: %d", ret);
+//		PX4_WARN("read err: %d", ret);
 		perf_count(_comms_errors);
 		perf_end(_sample_perf);
 			/* only throw an error if we time out */
