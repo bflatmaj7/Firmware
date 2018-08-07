@@ -69,8 +69,8 @@
 
 #include <board_config.h>
 
-// designated SERIAL4/5 on Pixhawk
-#define ELLIPSE_D_DEFAULT_PORT		"/dev/ttyS8"
+// designated serial port TELEM2 on Pixhawk
+#define ELLIPSE_D_DEFAULT_PORT		"/dev/ttyS2"
 
 class ELLIPSE_D : public device::CDev
 {
@@ -187,7 +187,7 @@ ELLIPSE_D::ELLIPSE_D(const char *port) :
 	_fd = ::open(_port, O_RDWR | O_NOCTTY | O_NONBLOCK);
 
 	if (_fd < 0) {
-		warnx("FAIL: laser fd");
+		warnx("FAIL: ellipse_d fd");
 	}
 
 	struct termios uart_config;
@@ -203,7 +203,7 @@ ELLIPSE_D::ELLIPSE_D(const char *port) :
 	/* no parity, one stop bit */
 	uart_config.c_cflag &= ~(CSTOPB | PARENB);
 
-	unsigned speed = B57600;
+	unsigned speed = B115200;
 
 	/* set baud rate */
 	if ((termios_state = cfsetispeed(&uart_config, speed)) < 0) {
@@ -254,7 +254,7 @@ int ELLIPSE_D::init()
 	_vns = 0.0f;
 	_vew = 0.0f;
 	_vud = 0.0f;
-	_conversion_interval =	10000;
+	_conversion_interval =	1000000;
 	/* status */
 	int ret = 0;
 
@@ -465,32 +465,9 @@ ELLIPSE_D::collect()
 	char readbuf[sizeof(_linebuf)];
 	unsigned readlen = sizeof(readbuf) - 1;
 	ret = ::read(_fd, &readbuf[0], readlen);
-//	ret = poll(_fd, fds[0], true);
 
 	if (ret > 0) {
-//		ret = ::write(_fd, &readbuf[0], ret);
-
-		if (ret < 0) {
-			DEVICE_DEBUG("read err: %d", ret);
-			PX4_WARN("read err: %d", ret);
-			perf_count(_comms_errors);
-			perf_end(_sample_perf);
-
-			/* only throw an error if we time out */
-			if (read_elapsed > (_conversion_interval * 2)) {
-				PX4_WARN("test1");
-				return ret;
-
-			} else {
-				PX4_WARN("test2");
-				return -EAGAIN;
-			}
-
-		} else if (ret == 0) {
-			PX4_WARN("test3");
-			return -EAGAIN;
-		}
-
+//		PX4_WARN("serial data received: %d.",ret);
 		bool valid = false;
 
 		for (int i = 0; i < ret; i++) {
@@ -505,13 +482,30 @@ ELLIPSE_D::collect()
 		}
 
 		if (!valid) {
-			PX4_WARN("test4");
-			return -EAGAIN;
+			PX4_WARN("data not valid");
 		}
 
-		DEVICE_DEBUG("raw: %s, valid: %s", _linebuf, ((valid) ? "OK" : "NO"));
-		PX4_WARN("raw: %s, valid: %s", _linebuf, ((valid) ? "OK" : "NO"));
+//		DEVICE_DEBUG("raw: %s, valid: %s", _linebuf, ((valid) ? "OK" : "NO"));
+//		PX4_WARN("raw: %s, valid: %s", _linebuf, ((valid) ? "OK" : "NO"));
 		perf_end(_sample_perf);
+
+	} else if (ret == 0) {
+		PX4_WARN("no data received.");
+		return -EAGAIN;
+	} else if (ret < 0) {
+		DEVICE_DEBUG("read err: %d", ret);
+		PX4_WARN("read err: %d", ret);
+		perf_count(_comms_errors);
+		perf_end(_sample_perf);
+			/* only throw an error if we time out */
+		if (read_elapsed > (_conversion_interval * 2)) {
+			PX4_WARN("time out");
+			return ret;
+			} else {
+			PX4_WARN("serial read failed");
+			return ret;
+		}
+
 	}
 
 	/* notify anyone waiting for data */
