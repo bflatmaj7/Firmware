@@ -36,7 +36,7 @@
 #include <px4_getopt.h>
 #include <px4_workqueue.h>
 
-#include <drivers/device/can.h>
+#include <termios.h>
 
 #include <sys/types.h>
 #include <stdint.h>
@@ -50,29 +50,52 @@
 #include <stdio.h>
 #include <math.h>
 #include <unistd.h>
-
-#include <perf/perf_counter.h>
-#include <systemlib/err.h>
+#include <vector>
 
 #include <drivers/drv_hrt.h>
 #include <drivers/drv_mhp.h>
 #include <drivers/device/device.h>
 #include <drivers/device/ringbuffer.h>
 
+#include <perf/perf_counter.h>
+#include <systemlib/err.h>
+
 #include <uORB/uORB.h>
+#include <uORB/topics/subsystem_info.h>
 #include <uORB/topics/mhp.h>
 
 #include <board_config.h>
 
-#define PSC5B_DEFAULT_PORT	"/dev/can0"
-
+#define PSC5B_DEFAULT_PORT	"/dev/ttyS3"
 
 #ifndef CONFIG_SCHED_WORKQUEUE
 # error This requires CONFIG_SCHED_WORKQUEUE.
 #endif
 
+typedef enum _Psc5bMsgStatus{
+	MSG_EMPTY = 0,
+	MSG_COMPLETE
+} Psc5bMsgStatus;
 
-class PSC5B : public device::CAN
+typedef struct{
+	uint16_t id;
+	uint8_t dlc;
+	uint8_t data[8];
+	Psc5bMsgStatus status;
+
+} PSC5B_MESSAGE;
+
+
+enum PSC5B_PARSE_STATE {
+	PSC5B_PARSE_STATE0_ID1 = 0,
+	PSC5B_PARSE_STATE1_ID2 = 1,
+	PSC5B_PARSE_STATE2_DLC = 2,
+	PSC5B_PARSE_STATE3_DATA = 3
+};
+
+int psc5b_parser(char c, char *parserbuf,  unsigned *parserbuf_index, PSC5B_PARSE_STATE *state,PSC5B_MESSAGE *msg);
+
+class PSC5B : public device::CDev
 {
 public:
 	PSC5B(const char *port = PSC5B_DEFAULT_PORT);
@@ -92,6 +115,7 @@ protected:
 
 private:
 	char 				_port[20];
+	PSC5B_MESSAGE	 	_msg;
 	float				_dp0;
 	float				_dp1;
 	float				_dp2;
@@ -100,27 +124,23 @@ private:
 	float				_dpS;
 	int                 _conversion_interval;
 	work_s				_work;
-	ringbuffer::RingBuffer  *_reports;
-	bool				_sensor_ok;
+	ringbuffer::RingBuffer		*_reports;
 	int				_measure_ticks;
+	bool				_collect_phase;
 	int				_fd;
+	char				_linebuf[255];
+	unsigned			_linebuf_index;
+	enum PSC5B_PARSE_STATE		_parse_state;
 	hrt_abstime			_last_read;
 	int				_class_instance;
 	int				_orb_class_instance;
 
 	orb_advert_t		_mhp_topic;
 
+	unsigned			_consecutive_fail_count;
+
 	perf_counter_t		_sample_perf;
 	perf_counter_t		_comms_errors;
-
-	/**
-	* Test whether the device supported by the driver is present at a
-	* specific address.
-	*
-	* @param address	The I2C bus address to probe.
-	* @return			True if the device is present.
-	*/
-	int					probe_address(uint8_t address);
 
 	/**
 	* Initialise the automatic measurement state machine and start it.
@@ -140,9 +160,10 @@ private:
 	* Perform a poll cycle; collect from the previous measurement
 	* and start a new one.
 	*/
-	void				cycle();
-	int					measure();
-	int					collect();
+	void			cycle();
+	int				collect();
+	int				handle_msg(PSC5B_MESSAGE *msg);
+	int				calc_flow();
 
 	/**
 	* Static trampoline from the workq context; because we don't have a
@@ -152,7 +173,6 @@ private:
 	*/
 	static void			cycle_trampoline(void *arg);
 
-
 };
 
 /*
@@ -161,7 +181,7 @@ private:
 extern "C" __EXPORT int psc5b_main(int argc, char *argv[]);
 
 PSC5B::PSC5B(const char *port) :
-	CAN("PSC5B", MHP0_DEVICE_PATH),
+	CDev("PSC5B", MHP0_DEVICE_PATH),
 	_dp0(-1.0f),
 	_dp1(-1.0f),
 	_dp2(-1.0f),
@@ -170,12 +190,15 @@ PSC5B::PSC5B(const char *port) :
 	_dpS(-1.0f),
 	_conversion_interval(-1),
 	_reports(nullptr),
-	_sensor_ok(false),
 	_measure_ticks(0),
+	_collect_phase(false),
+	_fd(-1),
+	_linebuf_index(0),
 	_last_read(0),
 	_class_instance(-1),
 	_orb_class_instance(-1),
 	_mhp_topic(nullptr),
+	_consecutive_fail_count(0),
 	_sample_perf(perf_alloc(PC_ELAPSED, "psc5b_read")),
 	_comms_errors(perf_alloc(PC_COUNT, "psc5b_com_err"))
 
@@ -185,23 +208,45 @@ PSC5B::PSC5B(const char *port) :
 	/* enforce null termination */
 	_port[sizeof(_port) - 1] = '\0';
 
-	/* do CAN init (and probe) first */
-	if (CAN::init(_port) != OK) {
-		PX4_ERR("can init failed");
-		return;
-	}
-
 	/* open fd */
-	_fd = ::open(_port, O_RDONLY | O_NOCTTY | O_NONBLOCK);
+	_fd = ::open(_port, O_RDWR | O_NOCTTY | O_NONBLOCK);
 
 	if (_fd < 0) {
 		warnx("FAIL: laser fd");
 	}
 
-	/* enable debug() calls */
+	struct termios uart_config;
+
+	int termios_state;
+
+	/* fill the struct for the new configuration */
+	tcgetattr(_fd, &uart_config);
+
+	/* clear ONLCR flag (which appends a CR for every LF) */
+	uart_config.c_oflag &= ~ONLCR;
+
+	/* no parity, one stop bit */
+	uart_config.c_cflag &= ~(CSTOPB | PARENB);
+
+	unsigned speed = B57600;
+
+	/* set baud rate */
+	if ((termios_state = cfsetispeed(&uart_config, speed)) < 0) {
+		warnx("ERR CFG: %d ISPD", termios_state);
+	}
+
+	if ((termios_state = cfsetospeed(&uart_config, speed)) < 0) {
+		warnx("ERR CFG: %d OSPD\n", termios_state);
+	}
+
+	if ((termios_state = tcsetattr(_fd, TCSANOW, &uart_config)) < 0) {
+		warnx("ERR baud %d ATTR", termios_state);
+	}
+
+	// disable debug() calls
 	_debug_enabled = false;
 
-	/* work_cancel in the dtor will explode if we don't do this... */
+	// work_cancel in the dtor will explode if we don't do this...
 	memset(&_work, 0, sizeof(_work));
 }
 
@@ -215,15 +260,10 @@ PSC5B::~PSC5B()
 		delete _reports;
 	}
 
-	if (_mhp_topic != nullptr) {
-		orb_unadvertise(_mhp_topic);
-	}
-
 	if (_class_instance != -1) {
 		unregister_class_devname(MHP_BASE_DEVICE_PATH, _class_instance);
 	}
 
-	/* free perf counters */
 	perf_free(_sample_perf);
 	perf_free(_comms_errors);
 }
@@ -231,6 +271,8 @@ PSC5B::~PSC5B()
 int
 PSC5B::init()
 {
+	int ret = 0;
+
 	_dp0 = 0.0f;
 	_dp1 = 0.0f;
 	_dp2 = 0.0f;
@@ -239,7 +281,6 @@ PSC5B::init()
 	_dpS = 0.0f;
 	_conversion_interval = 1000000;
 
-	int ret = 0;
 
 	do { /* create a scope to handle exit conditions using break */
 
@@ -431,135 +472,54 @@ PSC5B::read(device::file_t *filp, char *buffer, size_t buflen)
 
 	return ret;
 }
-#define BUFLEN 11
+
 int
 PSC5B::collect()
 {
-	int	ret = -EIO;
+	int	ret = 1;
 
-	/* read from the sensor */
-//	uint8_t val[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 	perf_begin(_sample_perf);
 
 	/* clear buffer if last read was too long ago */
 	int64_t read_elapsed = hrt_elapsed_time(&_last_read);
 
-
-	uint8_t readbuf[BUFLEN];
-	readbuf[0] = 0x02;
-	readbuf[1] = 0x01;
-	readbuf[2] = 0x08;
-	readbuf[3] = '1';
-	readbuf[4] = '2';
-	readbuf[5] = '3';
-	readbuf[6] = '4';
-	readbuf[7] = '5';
-	readbuf[8] = '6';
-	readbuf[9] = '7';
-	readbuf[10] = '8';
-	unsigned readlen = sizeof(readbuf);
-	ret = ::write(_fd,&readbuf[0], readlen);
-//	struct pollfd fds;
-//
-//	/* wait for data to be ready */
-//	fds.fd = _fd;
-//	fds.events = POLLIN;
-//	ret = ::poll(&fds, 1, 3);
-
-//	ret = ::read(_fd, readbuf, BUFLEN);
-
-//	receive(readbuf);
-//	ret = 1;
-//	PX4_WARN("read result: %d", ret);
+	/* the buffer for read chars is buflen minus null termination */
+	char readbuf[sizeof(_linebuf)];
+	unsigned readlen = sizeof(readbuf) - 1;
+	ret = ::read(_fd, &readbuf[0], readlen);
 
 	if (ret > 0) {
-//		ret = ::write(_fd,&readbuf[0], readlen);
-		PX4_WARN("read success: %d", readbuf[0]);
-		struct mhp_s report;
-		report.timestamp = hrt_absolute_time();
-		report.dp0 = 1;
-	//	report.dp1 = dp1;
-	//	report.dp2 = dp2;
-	//	report.dp3 = dp3;
-	//	report.dp4 = dp4;
-	//	report.dpS = dpS;
-		/* TODO: set proper ID */
-		//report.id = 333;
-
-		/* publish it, if we are the primary */
-		if (_mhp_topic != nullptr) {
-			orb_publish(ORB_ID(mhp), _mhp_topic, &report);
+		for (int i = 0; i < ret; i++) {
+			if (OK == psc5b_parser(readbuf[i], _linebuf, &_linebuf_index, &_parse_state, &_msg)) {
+				if (_msg.status == MSG_COMPLETE){
+					ret = handle_msg(&_msg);
+					_msg.status = MSG_EMPTY;
+				}
+//				char test_str[4];
+//				sprintf(test_str,"%d",_parse_state);
+//				::write(_fd,test_str,4);
+			}
 		}
+
 		_last_read = hrt_absolute_time();
 
-		_reports->force(&report);
-
 		perf_end(_sample_perf);
+
+	} else if (ret == 0) {
+//		PX4_WARN("no data received.");
+		return -EAGAIN;
 	} else if (ret < 0) {
-		DEVICE_DEBUG("read err: %d", ret);
-//		PX4_WARN("read err: %d", ret);
 		perf_count(_comms_errors);
 		perf_end(_sample_perf);
-
-		struct mhp_s report;
-		report.timestamp = hrt_absolute_time();
-		report.dp0 = 2;
-	//	report.dp1 = dp1;
-	//	report.dp2 = dp2;
-	//	report.dp3 = dp3;
-	//	report.dp4 = dp4;
-	//	report.dpS = dpS;
-		/* TODO: set proper ID */
-		//report.id = 333;
-
-		/* publish it, if we are the primary */
-		if (_mhp_topic != nullptr) {
-			orb_publish(ORB_ID(mhp), _mhp_topic, &report);
-		}
-		_last_read = hrt_absolute_time();
-
-		_reports->force(&report);
-
-		perf_end(_sample_perf);
-
-		/* only throw an error if we time out */
+			/* only throw an error if we time out */
 		if (read_elapsed > (_conversion_interval * 2)) {
-			PX4_WARN("test1");
+//			PX4_WARN("time out");
 			return ret;
-		} else {
-			PX4_WARN("test2");
-			return -EAGAIN;
+			} else {
+//			PX4_WARN("serial read failed");
+			return ret;
 		}
-//		readbuf[2] = 0x04;
-//		readbuf[3] = '9';
-//		ret = ::write(_fd,&readbuf[0], 4);
-	} else {
-		struct mhp_s report;
-		report.timestamp = hrt_absolute_time();
-		report.dp0 = 10;
-	//	report.dp1 = dp1;
-	//	report.dp2 = dp2;
-	//	report.dp3 = dp3;
-	//	report.dp4 = dp4;
-	//	report.dpS = dpS;
-		/* TODO: set proper ID */
-		//report.id = 333;
 
-		/* publish it, if we are the primary */
-		if (_mhp_topic != nullptr) {
-			orb_publish(ORB_ID(mhp), _mhp_topic, &report);
-		}
-		_last_read = hrt_absolute_time();
-
-		_reports->force(&report);
-
-		perf_end(_sample_perf);
-
-//		readbuf[2] = 0x04;
-//		readbuf[3] = '7';
-//		ret = ::write(_fd,&readbuf[0], 4);
-		PX4_WARN("test3");
-		return -EAGAIN;
 	}
 
 	/* notify anyone waiting for data */
@@ -568,10 +528,59 @@ PSC5B::collect()
 	return ret;
 }
 
+int
+PSC5B::handle_msg(PSC5B_MESSAGE *msg)
+{
+
+	switch (msg->id){
+	case 100:
+		_dp0 = msg->data[0] | msg->data[1]<<8;
+		_dp1 = msg->data[2] | msg->data[3]<<8;
+		_dp2 = msg->data[4] | msg->data[5]<<8;
+		_dp3 = msg->data[6] | msg->data[7]<<8;
+		break;
+	case 101:
+		_dp4 = msg->data[0] | msg->data[1]<<8;
+		_dpS = msg->data[2] | msg->data[3]<<8;
+		calc_flow();
+		break;
+	default:
+		break;
+	}
+
+	struct mhp_s report;
+
+	report.timestamp = hrt_absolute_time();
+	report.dp0 = _dp0;
+	report.dp1 = _dp1;
+	report.dp2 = _dp2;
+	report.dp3 = _dp3;
+	report.dp4 = _dp4;
+	report.dpS = _dpS;
+	/* TODO: set proper ID */
+	//report.id = 0;
+
+	/* publish it */
+	orb_publish(ORB_ID(mhp), _mhp_topic, &report);
+
+	_reports->force(&report);
+
+	return OK;
+
+}
+
+int
+PSC5B::calc_flow()
+{
+	return 0;
+}
+
+
 void
 PSC5B::start()
 {
 	/* reset the report ring and state machine */
+	_collect_phase = false;
 	_reports->flush();
 
 	/* schedule a cycle to start things */
@@ -596,17 +605,33 @@ void
 PSC5B::cycle()
 {
 
-	/* fds initialized? */
-	if (_fd < 0) {
-		/* open fd */
-		_fd = ::open(_port, O_RDONLY | O_NOCTTY | O_NONBLOCK);
+	/* collection phase? */
+	if (_collect_phase) {
+
+		/* perform collection */
+		collect();
+
+		/* next phase is measurement */
+		_collect_phase = false;
+
+		/*
+		 * Is there a collect->measure gap?
+		 */
+		if (_measure_ticks > USEC2TICK(_conversion_interval)) {
+
+			/* schedule a fresh cycle call when we are ready to measure again */
+			work_queue(HPWORK,
+				   &_work,
+				   (worker_t)&PSC5B::cycle_trampoline,
+				   this,
+				   _measure_ticks - USEC2TICK(_conversion_interval));
+
+			return;
+		}
 	}
 
-	/* Collect results */
-	if (OK != collect()) {
-		PX4_ERR("collect failed");
-		DEVICE_DEBUG("collection error");
-	}
+	/* next phase is collection */
+	_collect_phase = true;
 
 	/* schedule a fresh cycle call when the measurement is done */
 	work_queue(HPWORK,
@@ -646,7 +671,7 @@ void	info();
 void
 start(const char *port)
 {
-	int fd = -1;
+	int fd;
 
 	if (g_dev != nullptr) {
 		errx(1, "already started");
@@ -807,6 +832,61 @@ info()
 }
 
 } /* namespace */
+
+int psc5b_parser(char c, char *parserbuf,  unsigned *parserbuf_index, PSC5B_PARSE_STATE *state,PSC5B_MESSAGE *msg)
+{
+	int ret = 0;
+
+	switch (*state) {
+	case PSC5B_PARSE_STATE0_ID1:
+		*state = PSC5B_PARSE_STATE1_ID2;
+		msg->id = c;
+		*parserbuf_index=0;
+
+		break;
+
+	case PSC5B_PARSE_STATE1_ID2:
+		msg->id |= c<<8;
+		if (msg->id==100 || msg->id==101){
+			*state = PSC5B_PARSE_STATE2_DLC;
+		}
+		else{
+			*state = PSC5B_PARSE_STATE0_ID1;
+			return PX4_ERROR;
+		}
+
+		break;
+
+	case PSC5B_PARSE_STATE2_DLC:
+		msg->dlc = c;
+		if (msg->dlc==8){
+			*state = PSC5B_PARSE_STATE3_DATA;
+		}
+		else{
+			*state = PSC5B_PARSE_STATE0_ID1;
+			return PX4_ERROR;
+		}
+		break;
+
+	case PSC5B_PARSE_STATE3_DATA:
+		if (*parserbuf_index<unsigned(msg->dlc-1))
+		{
+			msg->data[*parserbuf_index] = c;
+			(*parserbuf_index)++;
+
+		}
+		else
+		{
+			msg->data[*parserbuf_index] = c;
+			*state = PSC5B_PARSE_STATE0_ID1;
+			msg->status = MSG_COMPLETE;
+			return PX4_OK;
+		}
+		break;
+	}
+
+	return ret;
+}
 
 int
 psc5b_main(int argc, char *argv[])
