@@ -203,7 +203,7 @@ ELLIPSE_D::ELLIPSE_D(const char *port) :
 	/* no parity, one stop bit */
 	uart_config.c_cflag &= ~(CSTOPB | PARENB);
 
-	unsigned speed = B115200;
+	unsigned speed = B57600;
 
 	/* set baud rate */
 	if ((termios_state = cfsetispeed(&uart_config, speed)) < 0) {
@@ -254,7 +254,7 @@ int ELLIPSE_D::init()
 	_vns = 0.0f;
 	_vew = 0.0f;
 	_vud = 0.0f;
-	_conversion_interval =	10000;
+	_conversion_interval =	20000;
 	/* status */
 	int ret = 0;
 
@@ -467,44 +467,34 @@ ELLIPSE_D::collect()
 	ret = ::read(_fd, &readbuf[0], readlen);
 
 	if (ret > 0) {
-//		PX4_WARN("serial data received: %d.",ret);
-		::write(_fd,"serial data received",20);
-		bool valid = false;
-
 		for (int i = 0; i < ret; i++) {
 			if (OK == ellipse_d_parser(readbuf[i], _linebuf, &_linebuf_index, &_parse_state, &_msg)) {
 				if (_msg.status == MSG_COMPLETE){
 					ret = handle_msg(&_msg);
 					_msg.status = MSG_EMPTY;
 				}
-				valid = true;
+//				char test_str[4];
+//				sprintf(test_str,"%d",_parse_state);
+//				::write(_fd,test_str,4);
 			}
 		}
 
-		if (!valid) {
-			PX4_WARN("data not valid");
-		}
 		_last_read = hrt_absolute_time();
 
-//		DEVICE_DEBUG("raw: %s, valid: %s", _linebuf, ((valid) ? "OK" : "NO"));
-//		PX4_WARN("raw: %s, valid: %s", _linebuf, ((valid) ? "OK" : "NO"));
 		perf_end(_sample_perf);
 
 	} else if (ret == 0) {
-		PX4_WARN("no data received.");
+//		PX4_WARN("no data received.");
 		return -EAGAIN;
 	} else if (ret < 0) {
-		::write(_fd,"serial read error",17);
-//		DEVICE_DEBUG("read err: %d", ret);
-//		PX4_WARN("read err: %d", ret);
 		perf_count(_comms_errors);
 		perf_end(_sample_perf);
 			/* only throw an error if we time out */
 		if (read_elapsed > (_conversion_interval * 2)) {
-			PX4_WARN("time out");
+//			PX4_WARN("time out");
 			return ret;
 			} else {
-			PX4_WARN("serial read failed");
+//			PX4_WARN("serial read failed");
 			return ret;
 		}
 
@@ -851,7 +841,7 @@ info()
 
 int ellipse_d_parser(char c, char *parserbuf, unsigned *parserbuf_index, enum ELLIPSE_D_PARSE_STATE *state, ELLIPSE_MESSAGE *msg)
 {
-	int ret = -1;
+	int ret = 0;
 
 	switch (*state) {
 	case ELLIPSE_D_PARSE_STATE0_SYNC1:
@@ -865,6 +855,11 @@ int ellipse_d_parser(char c, char *parserbuf, unsigned *parserbuf_index, enum EL
 	case ELLIPSE_D_PARSE_STATE1_SYNC2:
 		if (c == SBG_ECOM_SYNC_2) {
 			*state = ELLIPSE_D_PARSE_STATE2_MSG;
+		}
+		else
+		{
+			*state = ELLIPSE_D_PARSE_STATE0_SYNC1;
+			return PX4_ERROR;
 		}
 
 		break;
@@ -898,6 +893,11 @@ int ellipse_d_parser(char c, char *parserbuf, unsigned *parserbuf_index, enum EL
 		parserbuf[*parserbuf_index] = c;
 		(*parserbuf_index)++;
 		msg->length |= c<<8;
+		if (msg->length>SBG_ECOM_MAX_PAYLOAD_SIZE){
+			*state = ELLIPSE_D_PARSE_STATE0_SYNC1;
+			msg->length = 0;
+			return PX4_ERROR;
+		}
 
 		break;
 
@@ -932,7 +932,9 @@ int ellipse_d_parser(char c, char *parserbuf, unsigned *parserbuf_index, enum EL
 		else
 		{
 			*state = ELLIPSE_D_PARSE_STATE0_SYNC1;
+			return PX4_ERROR;
 		}
+//		*state = ELLIPSE_D_PARSE_STATE9_ETX;
 
 		break;
 
@@ -940,7 +942,6 @@ int ellipse_d_parser(char c, char *parserbuf, unsigned *parserbuf_index, enum EL
 		*state = ELLIPSE_D_PARSE_STATE0_SYNC1;
 		if (c==SBG_ECOM_ETX)
 		{
-			ret = 0;
 			msg->status = MSG_COMPLETE;
 		}
 
