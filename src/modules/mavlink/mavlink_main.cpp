@@ -2012,6 +2012,7 @@ Mavlink::task_main(int argc, char *argv[])
 		configure_stream("COLLISION");
 		configure_stream("DISTANCE_SENSOR", 0.5f);
 		configure_stream("METEO", 0.5f);
+		configure_stream("MHP", 0.5f);
 		configure_stream("INS", 0.5f);
 		configure_stream("OPTICAL_FLOW_RAD", 1.0f);
 		configure_stream("VISION_POSITION_ESTIMATE", 1.0f);
@@ -2045,6 +2046,7 @@ Mavlink::task_main(int argc, char *argv[])
 		configure_stream("COLLISION");
 		configure_stream("DISTANCE_SENSOR", 10.0f);
 		configure_stream("METEO", 10.0f);
+		configure_stream("MHP", 10.0f);
 		configure_stream("INS", 10.0f);
 		configure_stream("OPTICAL_FLOW_RAD", 10.0f);
 		configure_stream("VISION_POSITION_ESTIMATE", 10.0f);
@@ -2083,6 +2085,7 @@ Mavlink::task_main(int argc, char *argv[])
 		configure_stream("HOME_POSITION", 0.5f);
 		configure_stream("VFR_HUD", 25.0f);
 		configure_stream("METEO", 1.0f);
+		configure_stream("MHP", 1.0f);
 		configure_stream("INS", 1.0f);
 		configure_stream("WIND_COV", 2.0f);
 		configure_stream("SYSTEM_TIME", 1.0f);
@@ -2108,6 +2111,7 @@ Mavlink::task_main(int argc, char *argv[])
 		configure_stream("COLLISION");
 		configure_stream("DISTANCE_SENSOR", 10.0f);
 		configure_stream("METEO", 10.0f);
+		configure_stream("MHP", 10.0f);
 		configure_stream("INS", 10.0f);
 		configure_stream("OPTICAL_FLOW_RAD", 10.0f);
 		configure_stream("VISION_POSITION_ESTIMATE", 10.0f);
@@ -2145,6 +2149,7 @@ Mavlink::task_main(int argc, char *argv[])
 		configure_stream("GLOBAL_POSITION_INT", 5.0f);
 		configure_stream("HOME_POSITION", 0.1f);
 		configure_stream("METEO", 1.0f);
+		configure_stream("MHP", 1.0f);
 		configure_stream("INS", 1.0f);
 		configure_stream("NAMED_VALUE_FLOAT", 1.0f);
 		configure_stream("VFR_HUD", 1.0f);

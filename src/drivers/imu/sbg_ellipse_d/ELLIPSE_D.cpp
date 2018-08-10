@@ -225,7 +225,6 @@ ELLIPSE_D::ELLIPSE_D(const char *port) :
 	memset(&_work, 0, sizeof(_work));
 }
 
-
 ELLIPSE_D::~ELLIPSE_D()
 {
 	/* make sure we are truly inactive */
@@ -430,7 +429,6 @@ ELLIPSE_D::read(device::file_t *filp, char *buffer, size_t buflen)
 	do {
 		_reports->flush();
 
-
 		/* wait for it to complete */
 		usleep(_conversion_interval);
 
@@ -465,6 +463,7 @@ ELLIPSE_D::collect()
 	char readbuf[sizeof(_linebuf)];
 	unsigned readlen = sizeof(readbuf) - 1;
 	ret = ::read(_fd, &readbuf[0], readlen);
+	::write(_fd,"test_123",8);
 
 	if (ret > 0) {
 		for (int i = 0; i < ret; i++) {

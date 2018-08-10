@@ -89,8 +89,8 @@ typedef struct{
 enum PSC5B_PARSE_STATE {
 	PSC5B_PARSE_STATE0_ID1 = 0,
 	PSC5B_PARSE_STATE1_ID2 = 1,
-	PSC5B_PARSE_STATE2_DLC = 2,
-	PSC5B_PARSE_STATE3_DATA = 3
+//	PSC5B_PARSE_STATE2_DLC = 2,
+	PSC5B_PARSE_STATE3_DATA = 2
 };
 
 int psc5b_parser(char c, char *parserbuf,  unsigned *parserbuf_index, PSC5B_PARSE_STATE *state,PSC5B_MESSAGE *msg);
@@ -194,6 +194,7 @@ PSC5B::PSC5B(const char *port) :
 	_collect_phase(false),
 	_fd(-1),
 	_linebuf_index(0),
+	_parse_state(PSC5B_PARSE_STATE0_ID1),
 	_last_read(0),
 	_class_instance(-1),
 	_orb_class_instance(-1),
@@ -212,7 +213,7 @@ PSC5B::PSC5B(const char *port) :
 	_fd = ::open(_port, O_RDWR | O_NOCTTY | O_NONBLOCK);
 
 	if (_fd < 0) {
-		warnx("FAIL: laser fd");
+		warnx("FAIL: psc5b fd");
 	}
 
 	struct termios uart_config;
@@ -228,7 +229,7 @@ PSC5B::PSC5B(const char *port) :
 	/* no parity, one stop bit */
 	uart_config.c_cflag &= ~(CSTOPB | PARENB);
 
-	unsigned speed = B57600;
+	unsigned speed = B9600;
 
 	/* set baud rate */
 	if ((termios_state = cfsetispeed(&uart_config, speed)) < 0) {
@@ -271,7 +272,6 @@ PSC5B::~PSC5B()
 int
 PSC5B::init()
 {
-	int ret = 0;
 
 	_dp0 = 0.0f;
 	_dp1 = 0.0f;
@@ -281,6 +281,7 @@ PSC5B::init()
 	_dpS = 0.0f;
 	_conversion_interval = 1000000;
 
+	int ret = 0;
 
 	do { /* create a scope to handle exit conditions using break */
 
@@ -495,9 +496,9 @@ PSC5B::collect()
 					ret = handle_msg(&_msg);
 					_msg.status = MSG_EMPTY;
 				}
-//				char test_str[4];
-//				sprintf(test_str,"%d",_parse_state);
-//				::write(_fd,test_str,4);
+				char test_str[4];
+				sprintf(test_str,"%d",_parse_state);
+				::write(_fd,test_str,4);
 			}
 		}
 
@@ -509,14 +510,15 @@ PSC5B::collect()
 //		PX4_WARN("no data received.");
 		return -EAGAIN;
 	} else if (ret < 0) {
+		::write(_fd,"test_nor",8);
 		perf_count(_comms_errors);
 		perf_end(_sample_perf);
 			/* only throw an error if we time out */
 		if (read_elapsed > (_conversion_interval * 2)) {
-//			PX4_WARN("time out");
+			PX4_WARN("time out");
 			return ret;
 			} else {
-//			PX4_WARN("serial read failed");
+			PX4_WARN("serial read failed");
 			return ret;
 		}
 
@@ -533,15 +535,15 @@ PSC5B::handle_msg(PSC5B_MESSAGE *msg)
 {
 
 	switch (msg->id){
-	case 100:
+	case 0x100:
 		_dp0 = msg->data[0] | msg->data[1]<<8;
 		_dp1 = msg->data[2] | msg->data[3]<<8;
 		_dp2 = msg->data[4] | msg->data[5]<<8;
 		_dp3 = msg->data[6] | msg->data[7]<<8;
 		break;
-	case 101:
+	case 0x101:
 		_dp4 = msg->data[0] | msg->data[1]<<8;
-		_dpS = msg->data[2] | msg->data[3]<<8;
+		_dpS = (msg->data[2] | msg->data[3]<<8)*5;
 		calc_flow();
 		break;
 	default:
@@ -604,6 +606,11 @@ PSC5B::cycle_trampoline(void *arg)
 void
 PSC5B::cycle()
 {
+	/* fds initialized? */
+	if (_fd < 0) {
+		/* open fd */
+		_fd = ::open(_port, O_RDWR | O_NOCTTY | O_NONBLOCK);
+	}
 
 	/* collection phase? */
 	if (_collect_phase) {
@@ -689,9 +696,10 @@ start(const char *port)
 	}
 
 	/* set the poll rate to default, starts automatic data collection */
-	fd = open(MHP0_DEVICE_PATH, O_RDONLY);
+	fd = open(MHP0_DEVICE_PATH, 0);
 
 	if (fd < 0) {
+		warnx("device open fail");
 		goto fail;
 	}
 
@@ -737,12 +745,11 @@ test()
 {
 	struct mhp_s report;
 	ssize_t sz;
-	int ret;
 
 	int fd = open(MHP0_DEVICE_PATH, O_RDONLY);
 
 	if (fd < 0) {
-		err(1, "%s open failed (try 'psc5b start' if the driver is not running", PSC5B_DEFAULT_PORT);
+		err(1, "%s open failed (try 'psc5b start' if the driver is not running", MHP0_DEVICE_PATH);
 	}
 
 	/* do a simple demand read */
@@ -766,7 +773,7 @@ test()
 		/* wait for data to be ready */
 		fds.fd = fd;
 		fds.events = POLLIN;
-		ret = poll(&fds, 1, 2000);
+		int ret = poll(&fds, 1, 2000);
 
 		if (ret != 1) {
 			warnx("timed out");
@@ -784,9 +791,9 @@ test()
 		print_message(report);
 	}
 
-	/* reset the sensor polling to default rate */
+	/* reset the sensor polling to the default rate */
 	if (OK != ioctl(fd, SENSORIOCSPOLLRATE, SENSOR_POLLRATE_DEFAULT)) {
-		errx(1, "failed to set default poll rate");
+		errx(1, "ERR: DEF RATE");
 	}
 
 	errx(0, "PASS");
@@ -847,29 +854,30 @@ int psc5b_parser(char c, char *parserbuf,  unsigned *parserbuf_index, PSC5B_PARS
 
 	case PSC5B_PARSE_STATE1_ID2:
 		msg->id |= c<<8;
-		if (msg->id==100 || msg->id==101){
-			*state = PSC5B_PARSE_STATE2_DLC;
-		}
-		else{
-			*state = PSC5B_PARSE_STATE0_ID1;
-			return PX4_ERROR;
-		}
-
-		break;
-
-	case PSC5B_PARSE_STATE2_DLC:
-		msg->dlc = c;
-		if (msg->dlc==8){
+		if (msg->id==0x100 || msg->id==0x101){
+//			*state = PSC5B_PARSE_STATE2_DLC;
 			*state = PSC5B_PARSE_STATE3_DATA;
 		}
 		else{
 			*state = PSC5B_PARSE_STATE0_ID1;
 			return PX4_ERROR;
 		}
+
 		break;
 
+//	case PSC5B_PARSE_STATE2_DLC:
+//		msg->dlc = c;
+//		if (msg->dlc==8){
+//			*state = PSC5B_PARSE_STATE3_DATA;
+//		}
+//		else{
+//			*state = PSC5B_PARSE_STATE0_ID1;
+//			return PX4_ERROR;
+//		}
+//		break;
+
 	case PSC5B_PARSE_STATE3_DATA:
-		if (*parserbuf_index<unsigned(msg->dlc-1))
+		if (*parserbuf_index<7)
 		{
 			msg->data[*parserbuf_index] = c;
 			(*parserbuf_index)++;

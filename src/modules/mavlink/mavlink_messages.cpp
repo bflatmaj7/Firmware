@@ -81,6 +81,7 @@
 #include <uORB/topics/manual_control_setpoint.h>
 #include <uORB/topics/mavlink_log.h>
 #include <uORB/topics/meteo.h>
+#include <uORB/topics/mhp.h>
 #include <uORB/topics/optical_flow.h>
 #include <uORB/topics/position_setpoint_triplet.h>
 #include <uORB/topics/sensor_combined.h>
@@ -3964,6 +3965,75 @@ protected:
     }
 };
 
+class MavlinkStreamMhp : public MavlinkStream
+{
+public:
+    const char *get_name() const
+    {
+        return MavlinkStreamMhp::get_name_static();
+    }
+    static const char *get_name_static()
+    {
+        return "MHP";
+    }
+	static uint16_t get_id_static()
+	{
+		return MAVLINK_MSG_ID_MHP;
+	}
+    uint16_t get_id()
+    {
+        return get_id_static();
+    }
+    static MavlinkStream *new_instance(Mavlink *mavlink)
+    {
+        return new MavlinkStreamMhp(mavlink);
+    }
+    unsigned get_size()
+    {
+        return MAVLINK_MSG_ID_MHP_LEN + MAVLINK_NUM_NON_PAYLOAD_BYTES;
+    }
+
+private:
+    MavlinkOrbSubscription *_mhp_sub;
+    uint64_t _mhp_time;
+//	MavlinkOrbSubscription *_local_meteo_sub;
+
+    /* do not allow top copying this class */
+    MavlinkStreamMhp(MavlinkStreamMhp &);
+    MavlinkStreamMhp& operator = (const MavlinkStreamMhp &);
+
+protected:
+    explicit MavlinkStreamMhp(Mavlink *mavlink) : MavlinkStream(mavlink),
+        _mhp_sub(_mavlink->add_orb_subscription(ORB_ID(mhp))),  // make sure you enter the name of your uORB topic here
+        _mhp_time(0)
+    {}
+
+    bool send(const hrt_abstime t)
+    {
+        struct mhp_s _mhp;    //make sure ca_traj_struct_s is the definition of your uORB topic
+
+        if (_mhp_sub->update(&_mhp_time, &_mhp)) {
+            mavlink_mhp_t _msg_mhp;  //make sure mavlink_ca_trajectory_t is the definition of your custom MAVLink message
+
+            _msg_mhp.dp0 = _mhp.dp0;
+            _msg_mhp.dp1 = _mhp.dp1;
+            _msg_mhp.dp2 = _mhp.dp2;
+            _msg_mhp.dp3 = _mhp.dp3;
+            _msg_mhp.dp4 = _mhp.dp4;
+            _msg_mhp.dpS = _mhp.dpS;
+            _msg_mhp.tas = _mhp.tas;
+            _msg_mhp.aoa = _mhp.aoa;
+            _msg_mhp.aos = _mhp.aos;
+
+			mavlink_msg_mhp_send_struct(_mavlink->get_channel(), &_msg_mhp);
+
+			return true;
+		}
+
+		return false;
+    }
+};
+
 class MavlinkStreamIns : public MavlinkStream
 {
 public:
@@ -3995,7 +4065,6 @@ public:
 private:
     MavlinkOrbSubscription *_ins_sub;
     uint64_t _ins_time;
-//	MavlinkOrbSubscription *_local_meteo_sub;
 
     /* do not allow top copying this class */
     MavlinkStreamIns(MavlinkStreamIns &);

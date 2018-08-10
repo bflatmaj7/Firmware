@@ -5,13 +5,13 @@
 
 MAVPACKED(
 typedef struct __mavlink_ins_t {
- uint64_t time_usec; /*< [us] Timestamp (microseconds since system boot or since UNIX epoch).*/
- float roll; /*<  Roll angle*/
- float pitch; /*<  Pitch angle*/
- float yaw; /*<  Yaw angle*/
- float vns; /*<  North-South velocity*/
- float vew; /*<  East-West velocity*/
- float vud; /*<  Up-Down velocity*/
+ uint64_t time_usec; /*< Timestamp (microseconds since system boot or since UNIX epoch).*/
+ float roll; /*< Roll angle*/
+ float pitch; /*< Pitch angle*/
+ float yaw; /*< Yaw angle*/
+ float vns; /*< North-South velocity*/
+ float vew; /*< East-West velocity*/
+ float vud; /*< Up-Down velocity*/
 }) mavlink_ins_t;
 
 #define MAVLINK_MSG_ID_INS_LEN 32
@@ -59,13 +59,13 @@ typedef struct __mavlink_ins_t {
  * @param component_id ID of this component (e.g. 200 for IMU)
  * @param msg The MAVLink message to compress the data into
  *
- * @param time_usec [us] Timestamp (microseconds since system boot or since UNIX epoch).
- * @param roll  Roll angle
- * @param pitch  Pitch angle
- * @param yaw  Yaw angle
- * @param vns  North-South velocity
- * @param vew  East-West velocity
- * @param vud  Up-Down velocity
+ * @param time_usec Timestamp (microseconds since system boot or since UNIX epoch).
+ * @param roll Roll angle
+ * @param pitch Pitch angle
+ * @param yaw Yaw angle
+ * @param vns North-South velocity
+ * @param vew East-West velocity
+ * @param vud Up-Down velocity
  * @return length of the message in bytes (excluding serial stream start sign)
  */
 static inline uint16_t mavlink_msg_ins_pack(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg,
@@ -105,13 +105,13 @@ static inline uint16_t mavlink_msg_ins_pack(uint8_t system_id, uint8_t component
  * @param component_id ID of this component (e.g. 200 for IMU)
  * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
- * @param time_usec [us] Timestamp (microseconds since system boot or since UNIX epoch).
- * @param roll  Roll angle
- * @param pitch  Pitch angle
- * @param yaw  Yaw angle
- * @param vns  North-South velocity
- * @param vew  East-West velocity
- * @param vud  Up-Down velocity
+ * @param time_usec Timestamp (microseconds since system boot or since UNIX epoch).
+ * @param roll Roll angle
+ * @param pitch Pitch angle
+ * @param yaw Yaw angle
+ * @param vns North-South velocity
+ * @param vew East-West velocity
+ * @param vud Up-Down velocity
  * @return length of the message in bytes (excluding serial stream start sign)
  */
 static inline uint16_t mavlink_msg_ins_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan,
@@ -177,13 +177,13 @@ static inline uint16_t mavlink_msg_ins_encode_chan(uint8_t system_id, uint8_t co
  * @brief Send a ins message
  * @param chan MAVLink channel to send the message
  *
- * @param time_usec [us] Timestamp (microseconds since system boot or since UNIX epoch).
- * @param roll  Roll angle
- * @param pitch  Pitch angle
- * @param yaw  Yaw angle
- * @param vns  North-South velocity
- * @param vew  East-West velocity
- * @param vud  Up-Down velocity
+ * @param time_usec Timestamp (microseconds since system boot or since UNIX epoch).
+ * @param roll Roll angle
+ * @param pitch Pitch angle
+ * @param yaw Yaw angle
+ * @param vns North-South velocity
+ * @param vew East-West velocity
+ * @param vud Up-Down velocity
  */
 #ifdef MAVLINK_USE_CONVENIENCE_FUNCTIONS
 
@@ -272,7 +272,7 @@ static inline void mavlink_msg_ins_send_buf(mavlink_message_t *msgbuf, mavlink_c
 /**
  * @brief Get field time_usec from ins message
  *
- * @return [us] Timestamp (microseconds since system boot or since UNIX epoch).
+ * @return Timestamp (microseconds since system boot or since UNIX epoch).
  */
 static inline uint64_t mavlink_msg_ins_get_time_usec(const mavlink_message_t* msg)
 {
@@ -282,7 +282,7 @@ static inline uint64_t mavlink_msg_ins_get_time_usec(const mavlink_message_t* ms
 /**
  * @brief Get field roll from ins message
  *
- * @return  Roll angle
+ * @return Roll angle
  */
 static inline float mavlink_msg_ins_get_roll(const mavlink_message_t* msg)
 {
@@ -292,7 +292,7 @@ static inline float mavlink_msg_ins_get_roll(const mavlink_message_t* msg)
 /**
  * @brief Get field pitch from ins message
  *
- * @return  Pitch angle
+ * @return Pitch angle
  */
 static inline float mavlink_msg_ins_get_pitch(const mavlink_message_t* msg)
 {
@@ -302,7 +302,7 @@ static inline float mavlink_msg_ins_get_pitch(const mavlink_message_t* msg)
 /**
  * @brief Get field yaw from ins message
  *
- * @return  Yaw angle
+ * @return Yaw angle
  */
 static inline float mavlink_msg_ins_get_yaw(const mavlink_message_t* msg)
 {
@@ -312,7 +312,7 @@ static inline float mavlink_msg_ins_get_yaw(const mavlink_message_t* msg)
 /**
  * @brief Get field vns from ins message
  *
- * @return  North-South velocity
+ * @return North-South velocity
  */
 static inline float mavlink_msg_ins_get_vns(const mavlink_message_t* msg)
 {
@@ -322,7 +322,7 @@ static inline float mavlink_msg_ins_get_vns(const mavlink_message_t* msg)
 /**
  * @brief Get field vew from ins message
  *
- * @return  East-West velocity
+ * @return East-West velocity
  */
 static inline float mavlink_msg_ins_get_vew(const mavlink_message_t* msg)
 {
@@ -332,7 +332,7 @@ static inline float mavlink_msg_ins_get_vew(const mavlink_message_t* msg)
 /**
  * @brief Get field vud from ins message
  *
- * @return  Up-Down velocity
+ * @return Up-Down velocity
  */
 static inline float mavlink_msg_ins_get_vud(const mavlink_message_t* msg)
 {
