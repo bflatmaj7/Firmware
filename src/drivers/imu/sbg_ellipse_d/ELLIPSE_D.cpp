@@ -463,10 +463,11 @@ ELLIPSE_D::collect()
 	char readbuf[sizeof(_linebuf)];
 	unsigned readlen = sizeof(readbuf) - 1;
 	ret = ::read(_fd, &readbuf[0], readlen);
-	::write(_fd,"test_123",8);
+//	::write(_fd,"test_123",8);
 
 	if (ret > 0) {
-		for (int i = 0; i < ret; i++) {
+		int byte_count = ret;
+		for (int i = 0; i < byte_count; i++) {
 			if (OK == ellipse_d_parser(readbuf[i], _linebuf, &_linebuf_index, &_parse_state, &_msg)) {
 				if (_msg.status == MSG_COMPLETE){
 					ret = handle_msg(&_msg);

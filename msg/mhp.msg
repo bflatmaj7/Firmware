@@ -7,9 +7,10 @@ float32 dp3		# flow probe diff. pressure 3
 float32 dp4		# flow probe diff. pressure 4
 float32 dpS		# flow probe diff. pressure 5
 
+float32 tas		# true airspeed
+
 float32 aoa		# angle of attack
 float32 aos		# angle of sideslip
 
-float32 tas		# true airspeed
 
 uint32 id		# unique device ID for the sensor that does not change between power cycles

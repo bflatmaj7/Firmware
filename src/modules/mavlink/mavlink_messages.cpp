@@ -4311,6 +4311,7 @@ static const StreamListItem streams_list[] = {
 	StreamListItem(&MavlinkStreamCollision::new_instance, &MavlinkStreamCollision::get_name_static, &MavlinkStreamCollision::get_id_static),
 	StreamListItem(&MavlinkStreamWind::new_instance, &MavlinkStreamWind::get_name_static, &MavlinkStreamWind::get_id_static),
 	StreamListItem(&MavlinkStreamMeteo::new_instance, &MavlinkStreamMeteo::get_name_static, &MavlinkStreamMeteo::get_id_static),
+	StreamListItem(&MavlinkStreamMhp::new_instance, &MavlinkStreamMhp::get_name_static, &MavlinkStreamMhp::get_id_static),
 	StreamListItem(&MavlinkStreamIns::new_instance, &MavlinkStreamIns::get_name_static, &MavlinkStreamIns::get_id_static),
 	StreamListItem(&MavlinkStreamMountOrientation::new_instance, &MavlinkStreamMountOrientation::get_name_static, &MavlinkStreamMountOrientation::get_id_static),
 	StreamListItem(&MavlinkStreamHighLatency2::new_instance, &MavlinkStreamHighLatency2::get_name_static, &MavlinkStreamHighLatency2::get_id_static),

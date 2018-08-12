@@ -8,13 +8,13 @@ set(config_module_list
 	# Board support modules
 	#
 	drivers/hyt271
-	#drivers/imu/sbg_ellipse_d
+	drivers/imu/sbg_ellipse_d
 	drivers/psc5b
 	#drivers/barometer
 	#drivers/differential_pressure
 	#drivers/distance_sensor
 	#drivers/magnetometer
-	drivers/telemetry
+	#drivers/telemetry
 
 	#drivers/batt_smbus
 	#drivers/blinkm
@@ -100,6 +100,7 @@ set(config_module_list
 	#modules/local_position_estimator
 	#modules/position_estimator_inav
 	#modules/wind_estimator
+	modules/mhp_wind_measurement
 
 	#
 	# Vehicle Control

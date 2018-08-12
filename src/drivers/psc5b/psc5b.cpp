@@ -80,7 +80,7 @@ typedef enum _Psc5bMsgStatus{
 typedef struct{
 	uint16_t id;
 	uint8_t dlc;
-	uint8_t data[8];
+	uint8_t data[10];
 	Psc5bMsgStatus status;
 
 } PSC5B_MESSAGE;
@@ -92,6 +92,9 @@ enum PSC5B_PARSE_STATE {
 //	PSC5B_PARSE_STATE2_DLC = 2,
 	PSC5B_PARSE_STATE3_DATA = 2
 };
+
+#define PSC5B_CANID1 0x1111
+#define PSC5B_CANID2 0x1211
 
 int psc5b_parser(char c, char *parserbuf,  unsigned *parserbuf_index, PSC5B_PARSE_STATE *state,PSC5B_MESSAGE *msg);
 
@@ -122,6 +125,9 @@ private:
 	float				_dp3;
 	float				_dp4;
 	float				_dpS;
+	float				_aoa;
+	float				_aos;
+	float				_tas;
 	int                 _conversion_interval;
 	work_s				_work;
 	ringbuffer::RingBuffer		*_reports;
@@ -188,6 +194,9 @@ PSC5B::PSC5B(const char *port) :
 	_dp3(-1.0f),
 	_dp4(-1.0f),
 	_dpS(-1.0f),
+	_aoa(-1.0f),
+	_aos(-1.0f),
+	_tas(-1.0f),
 	_conversion_interval(-1),
 	_reports(nullptr),
 	_measure_ticks(0),
@@ -279,7 +288,10 @@ PSC5B::init()
 	_dp3 = 0.0f;
 	_dp4 = 0.0f;
 	_dpS = 0.0f;
-	_conversion_interval = 1000000;
+	_aoa = 0.0f;
+	_aos = 0.0f;
+	_tas = 0.0f;
+	_conversion_interval = 100000;
 
 	int ret = 0;
 
@@ -490,15 +502,16 @@ PSC5B::collect()
 	ret = ::read(_fd, &readbuf[0], readlen);
 
 	if (ret > 0) {
-		for (int i = 0; i < ret; i++) {
+		int byte_count = ret;
+		for (int i = 0; i < byte_count; i++) {
 			if (OK == psc5b_parser(readbuf[i], _linebuf, &_linebuf_index, &_parse_state, &_msg)) {
 				if (_msg.status == MSG_COMPLETE){
 					ret = handle_msg(&_msg);
 					_msg.status = MSG_EMPTY;
 				}
-				char test_str[4];
-				sprintf(test_str,"%d",_parse_state);
-				::write(_fd,test_str,4);
+//				char test_str[7];
+//				sprintf(test_str,"s: %d",_parse_state);
+//				::write(_fd,test_str,7);
 			}
 		}
 
@@ -510,15 +523,15 @@ PSC5B::collect()
 //		PX4_WARN("no data received.");
 		return -EAGAIN;
 	} else if (ret < 0) {
-		::write(_fd,"test_nor",8);
+//		::write(_fd,"test_nor",8);
 		perf_count(_comms_errors);
 		perf_end(_sample_perf);
 			/* only throw an error if we time out */
 		if (read_elapsed > (_conversion_interval * 2)) {
-			PX4_WARN("time out");
+//			PX4_WARN("time out");
 			return ret;
 			} else {
-			PX4_WARN("serial read failed");
+//			PX4_WARN("serial read failed");
 			return ret;
 		}
 
@@ -535,15 +548,15 @@ PSC5B::handle_msg(PSC5B_MESSAGE *msg)
 {
 
 	switch (msg->id){
-	case 0x100:
-		_dp0 = msg->data[0] | msg->data[1]<<8;
-		_dp1 = msg->data[2] | msg->data[3]<<8;
-		_dp2 = msg->data[4] | msg->data[5]<<8;
-		_dp3 = msg->data[6] | msg->data[7]<<8;
+	case PSC5B_CANID1:
+		_dp0 = msg->data[0]<<8 | msg->data[1];
+		_dp1 = msg->data[2]<<8 | msg->data[3];
+		_dp2 = msg->data[4]<<8 | msg->data[5];
+		_dp3 = msg->data[6]<<8 | msg->data[7];
 		break;
-	case 0x101:
-		_dp4 = msg->data[0] | msg->data[1]<<8;
-		_dpS = (msg->data[2] | msg->data[3]<<8)*5;
+	case PSC5B_CANID2:
+		_dp4 = msg->data[0]<<8 | msg->data[1];
+		_dpS = (msg->data[2]<<8 | msg->data[3])*5;
 		calc_flow();
 		break;
 	default:
@@ -559,6 +572,9 @@ PSC5B::handle_msg(PSC5B_MESSAGE *msg)
 	report.dp3 = _dp3;
 	report.dp4 = _dp4;
 	report.dpS = _dpS;
+	report.aoa = _aoa;
+	report.aos = _aos;
+	report.tas = _tas;
 	/* TODO: set proper ID */
 	//report.id = 0;
 
@@ -574,6 +590,53 @@ PSC5B::handle_msg(PSC5B_MESSAGE *msg)
 int
 PSC5B::calc_flow()
 {
+	double dP = 1.0/4.0 * (double)(_dp1 + _dp2 + _dp3 + _dp4) ;
+    // Calculate coefficients k_a and k_b
+	double k_a = (double)(_dp1-_dp3)/((double)_dp0-dP) ; // alpha
+	double k_b = (double)(_dp2-_dp4)/((double)_dp0-dP) ; // beta
+
+    // Calculate the dimensionless pressure coefficients
+	double Si_a=0.0;
+	double Si_b=0.0;
+	double Si_q=0.0;
+	double Si_p=0.0;
+	for(int i=0;i<=poly_order;i++)
+	{
+		double Sj_a=0.0;
+		double Sj_b=0.0;
+		double Sj_q=0.0;
+		double Sj_p=0.0;
+		for(int j=0;j<=poly_order;j++)
+		  {
+			Sj_a = Sj_a + poly_alpha[(i+1)*j] * pow(k_b,j);
+			Sj_b = Sj_b + poly_beta[(i+1)*j] * pow(k_b,j);
+			Sj_q = Sj_q + poly_kq[(i+1)*j] * pow(k_b,j);
+			Sj_p = Sj_p + poly_kp[(i+1)*j] * pow(k_b,j);
+	 //		    cout << Sj_a << "  " << a[i][j] << "  " << pow(k_b[k],j) << "  " << k_b[k] << endl;
+			//cout << Sj_b << "  " << b[i][j] << "  " << pow(k_b[k],j) << endl;
+			//cout << Sj_p << "  " << pt[i][j] << "  " << pow(k_b[k],j) << endl;
+		  }
+		Si_a = Si_a + Sj_a * pow(k_a,i);
+		Si_b = Si_b + Sj_b * pow(k_a,i);
+		Si_q = Si_q + Sj_q * pow(k_a,i);
+		Si_p = Si_p + Sj_p * pow(k_a,i);
+	}
+	if(sqrt(pow(k_a,2))<1.5 && sqrt(pow(k_b,2))<1.5)
+	  {
+		_aoa = Si_a ; // angle of attack [deg]
+		_aos = Si_b ; // sideslip angle [deg]
+		_tas = ((Si_q * ((double)_dp0-dP)) + (double)_dp0) / 100.0 ;  // dynamic pressure [hPa]
+//		data[index.p_s_c].value[k] = (P[k] + p0[k] - Si_p * (p0[k]-dP[k])) / 100.0; // static pressure [hPa]
+	  }
+	else  // dummy values by no airspeed
+	  {
+		_aoa = -99.0;  // angle of attack [deg]
+		_aos = -99.0 ; // sideslip angle [deg]
+		_tas = -99.0 ;  // dynamic pressure [hPa]
+//		data[index.p_s_c].value[k] = data[index.p_s1].value[k] ;  // static pressure [hPa]
+	  }
+
+
 	return 0;
 }
 
@@ -854,7 +917,7 @@ int psc5b_parser(char c, char *parserbuf,  unsigned *parserbuf_index, PSC5B_PARS
 
 	case PSC5B_PARSE_STATE1_ID2:
 		msg->id |= c<<8;
-		if (msg->id==0x100 || msg->id==0x101){
+		if (msg->id==PSC5B_CANID1 || msg->id==PSC5B_CANID2){
 //			*state = PSC5B_PARSE_STATE2_DLC;
 			*state = PSC5B_PARSE_STATE3_DATA;
 		}
@@ -877,11 +940,10 @@ int psc5b_parser(char c, char *parserbuf,  unsigned *parserbuf_index, PSC5B_PARS
 //		break;
 
 	case PSC5B_PARSE_STATE3_DATA:
-		if (*parserbuf_index<7)
+		if (*parserbuf_index<9)
 		{
 			msg->data[*parserbuf_index] = c;
 			(*parserbuf_index)++;
-
 		}
 		else
 		{
