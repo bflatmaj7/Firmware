@@ -389,13 +389,18 @@ fi
 if param greater SENS_EN_HYT271 0
 then
 	hyt271 start
-	ellipse_d start
 fi
 
 # inertial navigation system
-if param greater SENS_EN_ELLIPSE_D 0
+if param greater SENS_EN_ELLIPSE 0
 then
 	ellipse_d start
+fi
+
+# mhp pressure scanner
+if param greater SENS_EN_PSC5B 0
+then
+	psc5b start
 fi
 
 # mb12xx sonar sensor

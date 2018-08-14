@@ -253,7 +253,7 @@ int ELLIPSE_D::init()
 	_vns = 0.0f;
 	_vew = 0.0f;
 	_vud = 0.0f;
-	_conversion_interval =	20000;
+	_conversion_interval =	10000;
 	/* status */
 	int ret = 0;
 
@@ -516,11 +516,11 @@ ELLIPSE_D::handle_msg(ELLIPSE_MESSAGE *msg)
 		_pitch = (*(float *)&msg->data[8])*180/PI;
 		_yaw = (*(float *)&msg->data[12])*180/PI;
 		break;
-	case SBG_ECOM_LOG_GPS1_VEL:
-		_vns = *(float *)&msg->data[12];
-		_vew = *(float *)&msg->data[16];
-		_vud = *(float *)&msg->data[20];
-		break;
+//	case SBG_ECOM_LOG_EKF_NAV:
+//		_vns = *(float *)&msg->data[4];
+//		_vew = *(float *)&msg->data[8];
+//		_vud = *(float *)&msg->data[12];
+//		break;
 	}
 
 	struct ins_s report;

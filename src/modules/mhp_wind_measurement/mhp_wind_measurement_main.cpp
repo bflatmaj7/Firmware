@@ -276,17 +276,9 @@ MhpWindModule::cycle()
 //
 //		  for(k=0;k<row;k++)
 //		    {
-//		      tas_gx[k] = ( tas_bx[k] * (cos(pitch[k]) * cos(thead[k]))) +	\
-//			( tas_by[k] * (sin(roll[k]) * sin(pitch[k]) * cos(thead[k]) - cos(roll[k]) * sin(thead[k]))) + \
-//			( tas_bz[k] * (cos(roll[k]) * sin(pitch[k]) * cos(thead[k]) + sin(roll[k]) * sin(thead[k]))) ;
-//
-//		      tas_gy[k] = ( tas_bx[k] * (cos(pitch[k]) * sin(thead[k]))) +	\
-//			( tas_by[k] * (sin(roll[k]) * sin(pitch[k]) * sin(thead[k]) + cos(roll[k]) * cos(thead[k]))) + \
-//			( tas_bz[k] * (cos(roll[k]) * sin(pitch[k]) * sin(thead[k]) - sin(roll[k]) * cos(thead[k]))) ;
-//
-//		      tas_gz[k] = ( tas_bx[k] * (-1.0 * sin(pitch[k]))) +	\
-//			( tas_by[k] * (sin(roll[k]) * cos(pitch[k]))) + 	\
-//			( tas_bz[k] * (cos(roll[k]) * cos(pitch[k]))) ;
+//		      tas_gx[k] = ( tas_bx[k] * (cos(pitch[k]) * cos(thead[k]))) +	( tas_by[k] * (sin(roll[k]) * sin(pitch[k]) * cos(thead[k]) - cos(roll[k]) * sin(thead[k]))) + ( tas_bz[k] * (cos(roll[k]) * sin(pitch[k]) * cos(thead[k]) + sin(roll[k]) * sin(thead[k]))) ;
+//		      tas_gy[k] = ( tas_bx[k] * (cos(pitch[k]) * sin(thead[k]))) +	( tas_by[k] * (sin(roll[k]) * sin(pitch[k]) * sin(thead[k]) + cos(roll[k]) * cos(thead[k]))) + ( tas_bz[k] * (cos(roll[k]) * sin(pitch[k]) * sin(thead[k]) - sin(roll[k]) * cos(thead[k]))) ;
+//		      tas_gz[k] = ( tas_bx[k] * (-1.0 * sin(pitch[k]))) + ( tas_by[k] * (sin(roll[k]) * cos(pitch[k]))) + ( tas_bz[k] * (cos(roll[k]) * cos(pitch[k]))) ;
 //		    }
 //
 //		  // the true airspeed components (geodetic coord.) are substracted from

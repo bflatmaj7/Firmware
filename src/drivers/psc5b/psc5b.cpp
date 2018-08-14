@@ -93,8 +93,8 @@ enum PSC5B_PARSE_STATE {
 	PSC5B_PARSE_STATE3_DATA = 2
 };
 
-#define PSC5B_CANID1 0x1111
-#define PSC5B_CANID2 0x1211
+#define PSC5B_CANID1 0x1101
+#define PSC5B_CANID2 0x1201
 
 int psc5b_parser(char c, char *parserbuf,  unsigned *parserbuf_index, PSC5B_PARSE_STATE *state,PSC5B_MESSAGE *msg);
 
@@ -291,7 +291,7 @@ PSC5B::init()
 	_aoa = 0.0f;
 	_aos = 0.0f;
 	_tas = 0.0f;
-	_conversion_interval = 100000;
+	_conversion_interval = 10000;
 
 	int ret = 0;
 
@@ -503,6 +503,7 @@ PSC5B::collect()
 
 	if (ret > 0) {
 		int byte_count = ret;
+		::write(_fd,&readbuf[0],ret);
 		for (int i = 0; i < byte_count; i++) {
 			if (OK == psc5b_parser(readbuf[i], _linebuf, &_linebuf_index, &_parse_state, &_msg)) {
 				if (_msg.status == MSG_COMPLETE){
@@ -549,14 +550,14 @@ PSC5B::handle_msg(PSC5B_MESSAGE *msg)
 
 	switch (msg->id){
 	case PSC5B_CANID1:
-		_dp0 = msg->data[0]<<8 | msg->data[1];
-		_dp1 = msg->data[2]<<8 | msg->data[3];
-		_dp2 = msg->data[4]<<8 | msg->data[5];
-		_dp3 = msg->data[6]<<8 | msg->data[7];
+		_dp0 = (*(short *)&msg->data[0]);
+		_dp1 = (*(short *)&msg->data[2]);
+		_dp2 = (*(short *)&msg->data[4]);
+		_dp3 = (*(short *)&msg->data[6]);
 		break;
 	case PSC5B_CANID2:
-		_dp4 = msg->data[0]<<8 | msg->data[1];
-		_dpS = (msg->data[2]<<8 | msg->data[3])*5;
+		_dp4 = (*(short *)&msg->data[0]);
+		_dpS = (*(short *)&msg->data[2])*5;
 		calc_flow();
 		break;
 	default:
