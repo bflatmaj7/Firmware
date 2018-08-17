@@ -64,6 +64,7 @@
 #include <uORB/uORB.h>
 #include <uORB/topics/subsystem_info.h>
 #include <uORB/topics/ins.h>
+#include <uORB/topics/vehicle_gps_position.h>
 
 #include <drivers/imu/sbg_ellipse_d/ELLIPSE_D.h>
 
@@ -111,6 +112,9 @@ private:
 	int				_orb_class_instance;
 
 	orb_advert_t			_ins_topic;
+	struct vehicle_gps_position_s	_report_gps_pos;				///< uORB topic for gps position
+	orb_advert_t			_report_gps_pos_pub;				///< uORB pub for gps position
+	int					_gps_orb_instance;				///< uORB multi-topic instance
 
 	unsigned			_consecutive_fail_count;
 
@@ -174,6 +178,9 @@ ELLIPSE_D::ELLIPSE_D(const char *port) :
 	_class_instance(-1),
 	_orb_class_instance(-1),
 	_ins_topic(nullptr),
+	_report_gps_pos{},
+	_report_gps_pos_pub(nullptr),
+	_gps_orb_instance(-1),
 	_consecutive_fail_count(0),
 	_sample_perf(perf_alloc(PC_ELAPSED, "ellipse_d_read")),
 	_comms_errors(perf_alloc(PC_COUNT, "ellipse_d_com_err"))
@@ -516,29 +523,58 @@ ELLIPSE_D::handle_msg(ELLIPSE_MESSAGE *msg)
 		_pitch = (*(float *)&msg->data[8])*180/PI;
 		_yaw = (*(float *)&msg->data[12])*180/PI;
 		break;
-//	case SBG_ECOM_LOG_EKF_NAV:
-//		_vns = *(float *)&msg->data[4];
-//		_vew = *(float *)&msg->data[8];
-//		_vud = *(float *)&msg->data[12];
-//		break;
+	case SBG_ECOM_LOG_EKF_NAV:
+		_vns = *(float *)&msg->data[4];
+		_vew = *(float *)&msg->data[8];
+		_vud = *(float *)&msg->data[12];
+
+		struct ins_s report;
+
+		report.timestamp = hrt_absolute_time();
+		report.roll = _roll;
+		report.pitch = _pitch;
+		report.yaw = _yaw;
+		report.vns = _vns;
+		report.vew = _vew;
+		report.vud = _vud;
+		/* TODO: set proper ID */
+		//report.id = 0;
+
+		/* publish it */
+		orb_publish(ORB_ID(ins), _ins_topic, &report);
+
+		_reports->force(&report);
+
+		break;
+	case SBG_ECOM_LOG_GPS1_POS:
+		_report_gps_pos = {};
+		_report_gps_pos.timestamp = hrt_absolute_time();
+		_report_gps_pos.time_utc_usec =  (*(int *)&msg->data[8])* 1000ULL;
+		_report_gps_pos.lat = (int)((*(double *)&msg->data[12])*1e7);
+		_report_gps_pos.lon = (int)((*(double *)&msg->data[20])*1e7);
+		_report_gps_pos.alt_ellipsoid = (int)((*(double *)&msg->data[28])*1000);
+		_report_gps_pos.alt = (int)((*(double *)&msg->data[28])*1000)-(int)((*(float *)&msg->data[36])*1000);
+		_report_gps_pos.s_variance_m_s = 0.5f;
+		_report_gps_pos.c_variance_rad = 0.1f;
+		_report_gps_pos.eph = (*(float *)&msg->data[40]);
+		_report_gps_pos.epv = (*(float *)&msg->data[48]);
+		_report_gps_pos.hdop = (*(float *)&msg->data[40]);
+		_report_gps_pos.vdop = (*(float *)&msg->data[48]);
+		_report_gps_pos.vel_n_m_s = _vns;
+		_report_gps_pos.vel_e_m_s = _vew;
+		_report_gps_pos.vel_d_m_s = _vud;
+		_report_gps_pos.satellites_used = msg->data[52];
+		if ((msg->data[4]&0x1F)==0){
+			_report_gps_pos.fix_type = 3;
+		}else{
+			_report_gps_pos.fix_type = 0;
+		}
+//		_report_gps_pos.fix_type = msg->data[4]&0x1F;
+
+		orb_publish_auto(ORB_ID(vehicle_gps_position), &_report_gps_pos_pub, &_report_gps_pos, &_gps_orb_instance,
+				 ORB_PRIO_DEFAULT);
 	}
 
-	struct ins_s report;
-
-	report.timestamp = hrt_absolute_time();
-	report.roll = _roll;
-	report.pitch = _pitch;
-	report.yaw = _yaw;
-	report.vns = _vns;
-	report.vew = _vew;
-	report.vud = _vud;
-	/* TODO: set proper ID */
-	//report.id = 0;
-
-	/* publish it */
-	orb_publish(ORB_ID(ins), _ins_topic, &report);
-
-	_reports->force(&report);
 
 	return OK;
 
