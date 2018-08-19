@@ -70,12 +70,17 @@
 
 #include <uORB/uORB.h>
 #include <uORB/topics/meteo.h>
+#include <uORB/topics/sensor_baro.h>
 #include <uORB/topics/debug_key_value.h>
 
 #include <board_config.h>
 
 /* Configuration Constants */
+#ifdef PX4_I2C_BUS_EXPANSION3
 #define HYT271_BUS 		PX4_I2C_BUS_EXPANSION3
+#else
+#define HYT271_BUS 		PX4_I2C_BUS_EXPANSION
+#endif
 #define HYT271_BASEADDR 	0x28
 #define HYT271_DEVICE_PATH	"/dev/hyt271"
 
@@ -117,6 +122,7 @@ private:
 	int				_measure_ticks;
 	int				_class_instance;
 	int				_orb_class_instance;
+	int				_orb_sensor_baro_fd;
 
 	orb_advert_t		_meteo_topic;
 
@@ -182,6 +188,7 @@ HYT271::HYT271(int bus, int address) :
 	_measure_ticks(0),
 	_class_instance(-1),
 	_orb_class_instance(-1),
+	_orb_sensor_baro_fd(-1),
 	_meteo_topic(nullptr),
 	_sample_perf(perf_alloc(PC_ELAPSED, "hyt271_read")),
 	_comms_errors(perf_alloc(PC_COUNT, "hyt271_com_err"))
@@ -189,6 +196,7 @@ HYT271::HYT271(int bus, int address) :
 {
 	/* enable debug() calls */
 	_debug_enabled = false;
+	_orb_sensor_baro_fd = orb_subscribe(ORB_ID(sensor_baro));
 
 	/* work_cancel in the dtor will explode if we don't do this... */
 	memset(&_work, 0, sizeof(_work));
@@ -206,6 +214,10 @@ HYT271::~HYT271()
 
 	if (_meteo_topic != nullptr) {
 		orb_unadvertise(_meteo_topic);
+	}
+
+	if (_orb_sensor_baro_fd != -1) {
+		orb_unsubscribe(_orb_sensor_baro_fd);
 	}
 
 	if (_class_instance != -1) {
@@ -470,11 +482,29 @@ HYT271::collect()
     float humidity = ((val[0] & 0x3f) << 8 | val[1]) * (100.0 / 0x3fff);
     float temperature = (val[2] << 8 | (val[3] & 0xfc)) * (165.0 / 0xfffc) - 40;
 
+	struct sensor_baro_s baro_msg;
+
+	orb_copy(ORB_ID(sensor_baro), _orb_sensor_baro_fd, &baro_msg);
+	float ps = baro_msg.pressure;
+
+    float  kappa = 0.28585657;
+    float E_hc = 6.107*pow(10,(7.45*(double)temperature/(235.0+(double)temperature))); //saturation vapor pressure
+    float e_hu = (double)humidity / 100.0 * (double)E_hc; // hPa
+    float m_hu = 621.97 * (double)e_hu / ((double)ps - (double)e_hu); //mixing ratio
+    float t_vir = ((double)temperature + 273.15) * (1.0 + (0.61 * (double)m_hu / 1000.0)) ; // virtual temperature
+    float t_pot_v = (double)t_vir* pow((1000.0 / (double)ps),kappa); // virtual potential temperature
+//    float Rd_par = 287.0;  // gas constant dry air [J/K/kg]
+//    float rho  = (double)ps * 100.0 / ((double)Rd_par * (double)t_vir);
+//    float a_hu = (double)e_hu / (461.0 * ((double)temperature + 273.15)) * 100.0 * 1000.0; // absolute humidity g/m^3
+    float q_hu = (double)m_hu/1000 / ((double)m_hu/1000+1); // absolute humidity g/m^3
+
 
 	struct meteo_s report;
 	report.timestamp = hrt_absolute_time();
 	report.humidity = humidity;
 	report.temperature = temperature;
+	report.t_pot_v = t_pot_v;
+	report.q_hu = q_hu;
 	/* TODO: set proper ID */
 	//report.id = 333;
 

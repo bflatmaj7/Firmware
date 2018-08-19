@@ -503,7 +503,7 @@ PSC5B::collect()
 
 	if (ret > 0) {
 		int byte_count = ret;
-		::write(_fd,&readbuf[0],ret);
+//		::write(_fd,&readbuf[0],ret);
 		for (int i = 0; i < byte_count; i++) {
 			if (OK == psc5b_parser(readbuf[i], _linebuf, &_linebuf_index, &_parse_state, &_msg)) {
 				if (_msg.status == MSG_COMPLETE){
@@ -516,11 +516,9 @@ PSC5B::collect()
 			}
 		}
 
-		_last_read = hrt_absolute_time();
 
-		perf_end(_sample_perf);
-
-	} else if (ret == 0) {
+	}
+	else if (ret == 0) {
 //		PX4_WARN("no data received.");
 		return -EAGAIN;
 	} else if (ret < 0) {
@@ -538,6 +536,10 @@ PSC5B::collect()
 
 	}
 
+	_last_read = hrt_absolute_time();
+
+	perf_end(_sample_perf);
+
 	/* notify anyone waiting for data */
 	poll_notify(POLLIN);
 
@@ -551,18 +553,26 @@ PSC5B::handle_msg(PSC5B_MESSAGE *msg)
 	switch (msg->id){
 	case PSC5B_CANID1:
 		_dp0 = (*(short *)&msg->data[0]);
-		_dp1 = (*(short *)&msg->data[2]);
-		_dp2 = (*(short *)&msg->data[4]);
+		_dp2 = (*(short *)&msg->data[2]);
+		_dp4 = (*(short *)&msg->data[4]);
 		_dp3 = (*(short *)&msg->data[6]);
 		break;
 	case PSC5B_CANID2:
-		_dp4 = (*(short *)&msg->data[0]);
+		_dp1 = (*(short *)&msg->data[0]);
 		_dpS = (*(short *)&msg->data[2])*5;
 		calc_flow();
 		break;
 	default:
 		break;
 	}
+
+	_dp0 = 316;
+	_dp2 = -123;
+	_dp4 = 25;
+	_dp3 = -163;
+	_dp1 = 0;
+	_dpS = 95100;
+	calc_flow();
 
 	struct mhp_s report;
 
@@ -601,18 +611,18 @@ PSC5B::calc_flow()
 	double Si_b=0.0;
 	double Si_q=0.0;
 	double Si_p=0.0;
-	for(int i=0;i<=poly_order;i++)
+	for(int i=0;i<poly_order;i++)
 	{
 		double Sj_a=0.0;
 		double Sj_b=0.0;
 		double Sj_q=0.0;
 		double Sj_p=0.0;
-		for(int j=0;j<=poly_order;j++)
+		for(int j=0;j<poly_order;j++)
 		  {
-			Sj_a = Sj_a + poly_alpha[(i+1)*j] * pow(k_b,j);
-			Sj_b = Sj_b + poly_beta[(i+1)*j] * pow(k_b,j);
-			Sj_q = Sj_q + poly_kq[(i+1)*j] * pow(k_b,j);
-			Sj_p = Sj_p + poly_kp[(i+1)*j] * pow(k_b,j);
+			Sj_a = Sj_a + poly_alpha[i*poly_order+j] * pow(k_b,j);
+			Sj_b = Sj_b + poly_beta[i*poly_order+j] * pow(k_b,j);
+			Sj_q = Sj_q + poly_kq[i*poly_order+j] * pow(k_b,j);
+			Sj_p = Sj_p + poly_kp[i*poly_order+j] * pow(k_b,j);
 	 //		    cout << Sj_a << "  " << a[i][j] << "  " << pow(k_b[k],j) << "  " << k_b[k] << endl;
 			//cout << Sj_b << "  " << b[i][j] << "  " << pow(k_b[k],j) << endl;
 			//cout << Sj_p << "  " << pt[i][j] << "  " << pow(k_b[k],j) << endl;
