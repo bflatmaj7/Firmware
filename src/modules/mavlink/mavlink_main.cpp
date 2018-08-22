@@ -2045,9 +2045,9 @@ Mavlink::task_main(int argc, char *argv[])
 		configure_stream("ADSB_VEHICLE");
 		configure_stream("COLLISION");
 		configure_stream("DISTANCE_SENSOR", 10.0f);
-		configure_stream("METEO", 10.0f);
-		configure_stream("MHP", 10.0f);
-		configure_stream("INS", 10.0f);
+		configure_stream("METEO", 5.0f);
+		configure_stream("MHP", 5.0f);
+		configure_stream("INS", 5.0f);
 		configure_stream("OPTICAL_FLOW_RAD", 10.0f);
 		configure_stream("VISION_POSITION_ESTIMATE", 10.0f);
 		configure_stream("ESTIMATOR_STATUS", 1.0f);
@@ -2110,9 +2110,9 @@ Mavlink::task_main(int argc, char *argv[])
 		configure_stream("ADSB_VEHICLE");
 		configure_stream("COLLISION");
 		configure_stream("DISTANCE_SENSOR", 10.0f);
-		configure_stream("METEO", 10.0f);
-		configure_stream("MHP", 10.0f);
-		configure_stream("INS", 10.0f);
+		configure_stream("METEO", 5.0f);
+		configure_stream("MHP", 5.0f);
+		configure_stream("INS", 5.0f);
 		configure_stream("OPTICAL_FLOW_RAD", 10.0f);
 		configure_stream("VISION_POSITION_ESTIMATE", 10.0f);
 		configure_stream("ESTIMATOR_STATUS", 5.0f);

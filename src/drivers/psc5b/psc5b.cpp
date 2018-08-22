@@ -63,6 +63,7 @@
 #include <uORB/uORB.h>
 #include <uORB/topics/subsystem_info.h>
 #include <uORB/topics/mhp.h>
+#include <uORB/topics/meteo.h>
 
 #include <board_config.h>
 
@@ -552,13 +553,13 @@ PSC5B::handle_msg(PSC5B_MESSAGE *msg)
 
 	switch (msg->id){
 	case PSC5B_CANID1:
-		_dp0 = (*(short *)&msg->data[0]);
-		_dp2 = (*(short *)&msg->data[2]);
-		_dp4 = (*(short *)&msg->data[4]);
-		_dp3 = (*(short *)&msg->data[6]);
+		_dp0 = (float)(*(short *)&msg->data[0]);
+		_dp2 = (float)(*(short *)&msg->data[2]);
+		_dp4 = (float)(*(short *)&msg->data[4]);
+		_dp3 = (float)(*(short *)&msg->data[6]);
 		break;
 	case PSC5B_CANID2:
-		_dp1 = (*(short *)&msg->data[0]);
+		_dp1 = (float)(*(short *)&msg->data[0]);
 		_dpS = (*(short *)&msg->data[2])*5;
 		calc_flow();
 		break;
@@ -566,13 +567,13 @@ PSC5B::handle_msg(PSC5B_MESSAGE *msg)
 		break;
 	}
 
-	_dp0 = 316;
-	_dp2 = -123;
-	_dp4 = 25;
-	_dp3 = -163;
-	_dp1 = 0;
-	_dpS = 95100;
-	calc_flow();
+//	_dp0 = 316;
+//	_dp2 = -123;
+//	_dp4 = 25;
+//	_dp3 = -163;
+//	_dp1 = 0;
+//	_dpS = 95100;
+//	calc_flow();
 
 	struct mhp_s report;
 
@@ -611,6 +612,8 @@ PSC5B::calc_flow()
 	double Si_b=0.0;
 	double Si_q=0.0;
 	double Si_p=0.0;
+	double q = 0.0;
+	double ps = 0.0;
 	for(int i=0;i<poly_order;i++)
 	{
 		double Sj_a=0.0;
@@ -636,8 +639,34 @@ PSC5B::calc_flow()
 	  {
 		_aoa = Si_a ; // angle of attack [deg]
 		_aos = Si_b ; // sideslip angle [deg]
-		_tas = ((Si_q * ((double)_dp0-dP)) + (double)_dp0) / 100.0 ;  // dynamic pressure [hPa]
-//		data[index.p_s_c].value[k] = (P[k] + p0[k] - Si_p * (p0[k]-dP[k])) / 100.0; // static pressure [hPa]
+		q = ((Si_q * ((double)_dp0-dP)) + (double)_dp0) / 100.0 ;  // dynamic pressure [hPa]
+		ps = ((double)_dpS + dP - Si_p * ((double)_dp0-dP)) / 100.0; // static pressure [hPa]
+
+
+		struct meteo_s meteo_msg;
+		int _orb_meteo_fd = orb_subscribe(ORB_ID(meteo));
+		double temperature;
+		double q_hu;
+		if (orb_copy(ORB_ID(meteo), _orb_meteo_fd, &meteo_msg) == PX4_OK) {
+			temperature = meteo_msg.temperature;
+			q_hu = meteo_msg.q_hu;
+		}
+		else{
+			temperature = 15;
+			q_hu = 0.01;
+		}
+
+		double c_p = (1.0+0.87*q_hu)*cp_par;
+		double c_v = (1.0+0.97*q_hu)*cv_par;
+		double R = c_p-c_v;
+		double kappa_hum = R/c_p;
+
+		_tas = sqrt(2.0*c_p*(temperature+273.15)*(pow(((q+ps)/ps),kappa_hum)-1.0));
+
+		if (_orb_meteo_fd != -1) {
+			orb_unsubscribe(_orb_meteo_fd);
+		}
+
 	  }
 	else  // dummy values by no airspeed
 	  {

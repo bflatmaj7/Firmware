@@ -3953,8 +3953,11 @@ protected:
         if (_meteo_sub->update(&_meteo_time, &_meteo)) {
             mavlink_meteo_t _msg_meteo;  //make sure mavlink_ca_trajectory_t is the definition of your custom MAVLink message
 
+            _msg_meteo.time_usec = _meteo.timestamp;
             _msg_meteo.temperature = _meteo.temperature;
             _msg_meteo.humidity  = _meteo.humidity;
+            _msg_meteo.t_pot_v  = _meteo.t_pot_v;
+            _msg_meteo.q_hu  = _meteo.q_hu;
 
 			mavlink_msg_meteo_send_struct(_mavlink->get_channel(), &_msg_meteo);
 
@@ -4015,6 +4018,7 @@ protected:
         if (_mhp_sub->update(&_mhp_time, &_mhp)) {
             mavlink_mhp_t _msg_mhp;  //make sure mavlink_ca_trajectory_t is the definition of your custom MAVLink message
 
+            _msg_mhp.time_usec = _mhp.timestamp;
             _msg_mhp.dp0 = _mhp.dp0;
             _msg_mhp.dp1 = _mhp.dp1;
             _msg_mhp.dp2 = _mhp.dp2;
@@ -4083,6 +4087,7 @@ protected:
         if (_ins_sub->update(&_ins_time, &_ins)) {
             mavlink_ins_t _msg_ins;  //make sure mavlink_ca_trajectory_t is the definition of your custom MAVLink message
 
+            _msg_ins.time_usec = _ins.timestamp;
             _msg_ins.roll = _ins.roll;
             _msg_ins.pitch  = _ins.pitch;
             _msg_ins.yaw  = _ins.yaw;

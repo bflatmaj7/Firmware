@@ -820,6 +820,8 @@ MavlinkReceiver::handle_message_meteo(mavlink_message_t *msg)
 	d.id = 	MAVLINK_MSG_ID_METEO;
 	d.temperature = met.temperature;
 	d.humidity = met.humidity;
+	d.t_pot_v = met.t_pot_v;
+	d.q_hu = met.q_hu;
 
 	if (_meteo_pub == nullptr) {
 		_meteo_pub = orb_advertise(ORB_ID(meteo), &d);

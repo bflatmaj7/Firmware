@@ -4708,13 +4708,15 @@
     </message>
     <message id="333" name="METEO">
       <description>Meteorological measurements</description>
-      <field type="uint64_t" name="time_usec" units="us">Timestamp (microseconds since system boot or since UNIX epoch).</field>
+      <field type="uint32_t" name="time_usec" units="us">Timestamp (microseconds since system boot or since UNIX epoch).</field>
       <field type="float" name="temperature">Temperature reading</field>
       <field type="float" name="humidity">Humidity reading</field>
+      <field type="float" name="t_pot_v">Virtual potential temperature</field>
+      <field type="float" name="q_hu">specific humidity</field>
     </message>
     <message id="334" name="INS">
       <description>Inertial navigation system measurements</description>
-      <field type="uint64_t" name="time_usec" units="us">Timestamp (microseconds since system boot or since UNIX epoch).</field>
+      <field type="uint32_t" name="time_usec" units="us">Timestamp (microseconds since system boot or since UNIX epoch).</field>
       <field type="float" name="roll">Roll angle</field>
       <field type="float" name="pitch">Pitch angle</field>
       <field type="float" name="yaw">Yaw angle</field>
@@ -4723,8 +4725,8 @@
       <field type="float" name="vud">Up-Down velocity</field>
     </message>
     <message id="335" name="MHP">
-      <description>Inertial navigation system measurements</description>
-      <field type="uint64_t" name="time_usec" units="us">Timestamp (microseconds since system boot or since UNIX epoch).</field>
+      <description>Multi-hole probe measurements</description>
+      <field type="uint32_t" name="time_usec" units="us">Timestamp (microseconds since system boot or since UNIX epoch).</field>
       <field type="float" name="dp0">diff. pressure, port 0</field>
       <field type="float" name="dp1">diff. pressure, port 1</field>
       <field type="float" name="dp2">diff. pressure, port 2</field>

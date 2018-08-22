@@ -100,7 +100,7 @@ set(config_module_list
 	#modules/local_position_estimator
 	#modules/position_estimator_inav
 	#modules/wind_estimator
-	modules/mhp_wind_measurement
+	#modules/mhp_wind_measurement
 
 	#
 	# Vehicle Control

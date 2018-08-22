@@ -5,7 +5,7 @@
 
 MAVPACKED(
 typedef struct __mavlink_ins_t {
- uint64_t time_usec; /*< Timestamp (microseconds since system boot or since UNIX epoch).*/
+ uint32_t time_usec; /*< Timestamp (microseconds since system boot or since UNIX epoch).*/
  float roll; /*< Roll angle*/
  float pitch; /*< Pitch angle*/
  float yaw; /*< Yaw angle*/
@@ -14,13 +14,13 @@ typedef struct __mavlink_ins_t {
  float vud; /*< Up-Down velocity*/
 }) mavlink_ins_t;
 
-#define MAVLINK_MSG_ID_INS_LEN 32
-#define MAVLINK_MSG_ID_INS_MIN_LEN 32
-#define MAVLINK_MSG_ID_334_LEN 32
-#define MAVLINK_MSG_ID_334_MIN_LEN 32
+#define MAVLINK_MSG_ID_INS_LEN 28
+#define MAVLINK_MSG_ID_INS_MIN_LEN 28
+#define MAVLINK_MSG_ID_334_LEN 28
+#define MAVLINK_MSG_ID_334_MIN_LEN 28
 
-#define MAVLINK_MSG_ID_INS_CRC 127
-#define MAVLINK_MSG_ID_334_CRC 127
+#define MAVLINK_MSG_ID_INS_CRC 206
+#define MAVLINK_MSG_ID_334_CRC 206
 
 
 
@@ -29,26 +29,26 @@ typedef struct __mavlink_ins_t {
     334, \
     "INS", \
     7, \
-    {  { "time_usec", NULL, MAVLINK_TYPE_UINT64_T, 0, 0, offsetof(mavlink_ins_t, time_usec) }, \
-         { "roll", NULL, MAVLINK_TYPE_FLOAT, 0, 8, offsetof(mavlink_ins_t, roll) }, \
-         { "pitch", NULL, MAVLINK_TYPE_FLOAT, 0, 12, offsetof(mavlink_ins_t, pitch) }, \
-         { "yaw", NULL, MAVLINK_TYPE_FLOAT, 0, 16, offsetof(mavlink_ins_t, yaw) }, \
-         { "vns", NULL, MAVLINK_TYPE_FLOAT, 0, 20, offsetof(mavlink_ins_t, vns) }, \
-         { "vew", NULL, MAVLINK_TYPE_FLOAT, 0, 24, offsetof(mavlink_ins_t, vew) }, \
-         { "vud", NULL, MAVLINK_TYPE_FLOAT, 0, 28, offsetof(mavlink_ins_t, vud) }, \
+    {  { "time_usec", NULL, MAVLINK_TYPE_UINT32_T, 0, 0, offsetof(mavlink_ins_t, time_usec) }, \
+         { "roll", NULL, MAVLINK_TYPE_FLOAT, 0, 4, offsetof(mavlink_ins_t, roll) }, \
+         { "pitch", NULL, MAVLINK_TYPE_FLOAT, 0, 8, offsetof(mavlink_ins_t, pitch) }, \
+         { "yaw", NULL, MAVLINK_TYPE_FLOAT, 0, 12, offsetof(mavlink_ins_t, yaw) }, \
+         { "vns", NULL, MAVLINK_TYPE_FLOAT, 0, 16, offsetof(mavlink_ins_t, vns) }, \
+         { "vew", NULL, MAVLINK_TYPE_FLOAT, 0, 20, offsetof(mavlink_ins_t, vew) }, \
+         { "vud", NULL, MAVLINK_TYPE_FLOAT, 0, 24, offsetof(mavlink_ins_t, vud) }, \
          } \
 }
 #else
 #define MAVLINK_MESSAGE_INFO_INS { \
     "INS", \
     7, \
-    {  { "time_usec", NULL, MAVLINK_TYPE_UINT64_T, 0, 0, offsetof(mavlink_ins_t, time_usec) }, \
-         { "roll", NULL, MAVLINK_TYPE_FLOAT, 0, 8, offsetof(mavlink_ins_t, roll) }, \
-         { "pitch", NULL, MAVLINK_TYPE_FLOAT, 0, 12, offsetof(mavlink_ins_t, pitch) }, \
-         { "yaw", NULL, MAVLINK_TYPE_FLOAT, 0, 16, offsetof(mavlink_ins_t, yaw) }, \
-         { "vns", NULL, MAVLINK_TYPE_FLOAT, 0, 20, offsetof(mavlink_ins_t, vns) }, \
-         { "vew", NULL, MAVLINK_TYPE_FLOAT, 0, 24, offsetof(mavlink_ins_t, vew) }, \
-         { "vud", NULL, MAVLINK_TYPE_FLOAT, 0, 28, offsetof(mavlink_ins_t, vud) }, \
+    {  { "time_usec", NULL, MAVLINK_TYPE_UINT32_T, 0, 0, offsetof(mavlink_ins_t, time_usec) }, \
+         { "roll", NULL, MAVLINK_TYPE_FLOAT, 0, 4, offsetof(mavlink_ins_t, roll) }, \
+         { "pitch", NULL, MAVLINK_TYPE_FLOAT, 0, 8, offsetof(mavlink_ins_t, pitch) }, \
+         { "yaw", NULL, MAVLINK_TYPE_FLOAT, 0, 12, offsetof(mavlink_ins_t, yaw) }, \
+         { "vns", NULL, MAVLINK_TYPE_FLOAT, 0, 16, offsetof(mavlink_ins_t, vns) }, \
+         { "vew", NULL, MAVLINK_TYPE_FLOAT, 0, 20, offsetof(mavlink_ins_t, vew) }, \
+         { "vud", NULL, MAVLINK_TYPE_FLOAT, 0, 24, offsetof(mavlink_ins_t, vud) }, \
          } \
 }
 #endif
@@ -69,17 +69,17 @@ typedef struct __mavlink_ins_t {
  * @return length of the message in bytes (excluding serial stream start sign)
  */
 static inline uint16_t mavlink_msg_ins_pack(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg,
-                               uint64_t time_usec, float roll, float pitch, float yaw, float vns, float vew, float vud)
+                               uint32_t time_usec, float roll, float pitch, float yaw, float vns, float vew, float vud)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
     char buf[MAVLINK_MSG_ID_INS_LEN];
-    _mav_put_uint64_t(buf, 0, time_usec);
-    _mav_put_float(buf, 8, roll);
-    _mav_put_float(buf, 12, pitch);
-    _mav_put_float(buf, 16, yaw);
-    _mav_put_float(buf, 20, vns);
-    _mav_put_float(buf, 24, vew);
-    _mav_put_float(buf, 28, vud);
+    _mav_put_uint32_t(buf, 0, time_usec);
+    _mav_put_float(buf, 4, roll);
+    _mav_put_float(buf, 8, pitch);
+    _mav_put_float(buf, 12, yaw);
+    _mav_put_float(buf, 16, vns);
+    _mav_put_float(buf, 20, vew);
+    _mav_put_float(buf, 24, vud);
 
         memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, MAVLINK_MSG_ID_INS_LEN);
 #else
@@ -116,17 +116,17 @@ static inline uint16_t mavlink_msg_ins_pack(uint8_t system_id, uint8_t component
  */
 static inline uint16_t mavlink_msg_ins_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan,
                                mavlink_message_t* msg,
-                                   uint64_t time_usec,float roll,float pitch,float yaw,float vns,float vew,float vud)
+                                   uint32_t time_usec,float roll,float pitch,float yaw,float vns,float vew,float vud)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
     char buf[MAVLINK_MSG_ID_INS_LEN];
-    _mav_put_uint64_t(buf, 0, time_usec);
-    _mav_put_float(buf, 8, roll);
-    _mav_put_float(buf, 12, pitch);
-    _mav_put_float(buf, 16, yaw);
-    _mav_put_float(buf, 20, vns);
-    _mav_put_float(buf, 24, vew);
-    _mav_put_float(buf, 28, vud);
+    _mav_put_uint32_t(buf, 0, time_usec);
+    _mav_put_float(buf, 4, roll);
+    _mav_put_float(buf, 8, pitch);
+    _mav_put_float(buf, 12, yaw);
+    _mav_put_float(buf, 16, vns);
+    _mav_put_float(buf, 20, vew);
+    _mav_put_float(buf, 24, vud);
 
         memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, MAVLINK_MSG_ID_INS_LEN);
 #else
@@ -187,17 +187,17 @@ static inline uint16_t mavlink_msg_ins_encode_chan(uint8_t system_id, uint8_t co
  */
 #ifdef MAVLINK_USE_CONVENIENCE_FUNCTIONS
 
-static inline void mavlink_msg_ins_send(mavlink_channel_t chan, uint64_t time_usec, float roll, float pitch, float yaw, float vns, float vew, float vud)
+static inline void mavlink_msg_ins_send(mavlink_channel_t chan, uint32_t time_usec, float roll, float pitch, float yaw, float vns, float vew, float vud)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
     char buf[MAVLINK_MSG_ID_INS_LEN];
-    _mav_put_uint64_t(buf, 0, time_usec);
-    _mav_put_float(buf, 8, roll);
-    _mav_put_float(buf, 12, pitch);
-    _mav_put_float(buf, 16, yaw);
-    _mav_put_float(buf, 20, vns);
-    _mav_put_float(buf, 24, vew);
-    _mav_put_float(buf, 28, vud);
+    _mav_put_uint32_t(buf, 0, time_usec);
+    _mav_put_float(buf, 4, roll);
+    _mav_put_float(buf, 8, pitch);
+    _mav_put_float(buf, 12, yaw);
+    _mav_put_float(buf, 16, vns);
+    _mav_put_float(buf, 20, vew);
+    _mav_put_float(buf, 24, vud);
 
     _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_INS, buf, MAVLINK_MSG_ID_INS_MIN_LEN, MAVLINK_MSG_ID_INS_LEN, MAVLINK_MSG_ID_INS_CRC);
 #else
@@ -236,17 +236,17 @@ static inline void mavlink_msg_ins_send_struct(mavlink_channel_t chan, const mav
   is usually the receive buffer for the channel, and allows a reply to an
   incoming message with minimum stack space usage.
  */
-static inline void mavlink_msg_ins_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan,  uint64_t time_usec, float roll, float pitch, float yaw, float vns, float vew, float vud)
+static inline void mavlink_msg_ins_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan,  uint32_t time_usec, float roll, float pitch, float yaw, float vns, float vew, float vud)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
     char *buf = (char *)msgbuf;
-    _mav_put_uint64_t(buf, 0, time_usec);
-    _mav_put_float(buf, 8, roll);
-    _mav_put_float(buf, 12, pitch);
-    _mav_put_float(buf, 16, yaw);
-    _mav_put_float(buf, 20, vns);
-    _mav_put_float(buf, 24, vew);
-    _mav_put_float(buf, 28, vud);
+    _mav_put_uint32_t(buf, 0, time_usec);
+    _mav_put_float(buf, 4, roll);
+    _mav_put_float(buf, 8, pitch);
+    _mav_put_float(buf, 12, yaw);
+    _mav_put_float(buf, 16, vns);
+    _mav_put_float(buf, 20, vew);
+    _mav_put_float(buf, 24, vud);
 
     _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_INS, buf, MAVLINK_MSG_ID_INS_MIN_LEN, MAVLINK_MSG_ID_INS_LEN, MAVLINK_MSG_ID_INS_CRC);
 #else
@@ -274,9 +274,9 @@ static inline void mavlink_msg_ins_send_buf(mavlink_message_t *msgbuf, mavlink_c
  *
  * @return Timestamp (microseconds since system boot or since UNIX epoch).
  */
-static inline uint64_t mavlink_msg_ins_get_time_usec(const mavlink_message_t* msg)
+static inline uint32_t mavlink_msg_ins_get_time_usec(const mavlink_message_t* msg)
 {
-    return _MAV_RETURN_uint64_t(msg,  0);
+    return _MAV_RETURN_uint32_t(msg,  0);
 }
 
 /**
@@ -286,7 +286,7 @@ static inline uint64_t mavlink_msg_ins_get_time_usec(const mavlink_message_t* ms
  */
 static inline float mavlink_msg_ins_get_roll(const mavlink_message_t* msg)
 {
-    return _MAV_RETURN_float(msg,  8);
+    return _MAV_RETURN_float(msg,  4);
 }
 
 /**
@@ -296,7 +296,7 @@ static inline float mavlink_msg_ins_get_roll(const mavlink_message_t* msg)
  */
 static inline float mavlink_msg_ins_get_pitch(const mavlink_message_t* msg)
 {
-    return _MAV_RETURN_float(msg,  12);
+    return _MAV_RETURN_float(msg,  8);
 }
 
 /**
@@ -306,7 +306,7 @@ static inline float mavlink_msg_ins_get_pitch(const mavlink_message_t* msg)
  */
 static inline float mavlink_msg_ins_get_yaw(const mavlink_message_t* msg)
 {
-    return _MAV_RETURN_float(msg,  16);
+    return _MAV_RETURN_float(msg,  12);
 }
 
 /**
@@ -316,7 +316,7 @@ static inline float mavlink_msg_ins_get_yaw(const mavlink_message_t* msg)
  */
 static inline float mavlink_msg_ins_get_vns(const mavlink_message_t* msg)
 {
-    return _MAV_RETURN_float(msg,  20);
+    return _MAV_RETURN_float(msg,  16);
 }
 
 /**
@@ -326,7 +326,7 @@ static inline float mavlink_msg_ins_get_vns(const mavlink_message_t* msg)
  */
 static inline float mavlink_msg_ins_get_vew(const mavlink_message_t* msg)
 {
-    return _MAV_RETURN_float(msg,  24);
+    return _MAV_RETURN_float(msg,  20);
 }
 
 /**
@@ -336,7 +336,7 @@ static inline float mavlink_msg_ins_get_vew(const mavlink_message_t* msg)
  */
 static inline float mavlink_msg_ins_get_vud(const mavlink_message_t* msg)
 {
-    return _MAV_RETURN_float(msg,  28);
+    return _MAV_RETURN_float(msg,  24);
 }
 
 /**

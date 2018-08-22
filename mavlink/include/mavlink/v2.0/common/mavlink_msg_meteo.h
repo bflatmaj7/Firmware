@@ -5,18 +5,20 @@
 
 MAVPACKED(
 typedef struct __mavlink_meteo_t {
- uint64_t time_usec; /*< Timestamp (microseconds since system boot or since UNIX epoch).*/
+ uint32_t time_usec; /*< Timestamp (microseconds since system boot or since UNIX epoch).*/
  float temperature; /*< Temperature reading*/
  float humidity; /*< Humidity reading*/
+ float t_pot_v; /*< Virtual potential temperature*/
+ float q_hu; /*< specific humidity*/
 }) mavlink_meteo_t;
 
-#define MAVLINK_MSG_ID_METEO_LEN 16
-#define MAVLINK_MSG_ID_METEO_MIN_LEN 16
-#define MAVLINK_MSG_ID_333_LEN 16
-#define MAVLINK_MSG_ID_333_MIN_LEN 16
+#define MAVLINK_MSG_ID_METEO_LEN 20
+#define MAVLINK_MSG_ID_METEO_MIN_LEN 20
+#define MAVLINK_MSG_ID_333_LEN 20
+#define MAVLINK_MSG_ID_333_MIN_LEN 20
 
-#define MAVLINK_MSG_ID_METEO_CRC 119
-#define MAVLINK_MSG_ID_333_CRC 119
+#define MAVLINK_MSG_ID_METEO_CRC 195
+#define MAVLINK_MSG_ID_333_CRC 195
 
 
 
@@ -24,19 +26,23 @@ typedef struct __mavlink_meteo_t {
 #define MAVLINK_MESSAGE_INFO_METEO { \
     333, \
     "METEO", \
-    3, \
-    {  { "time_usec", NULL, MAVLINK_TYPE_UINT64_T, 0, 0, offsetof(mavlink_meteo_t, time_usec) }, \
-         { "temperature", NULL, MAVLINK_TYPE_FLOAT, 0, 8, offsetof(mavlink_meteo_t, temperature) }, \
-         { "humidity", NULL, MAVLINK_TYPE_FLOAT, 0, 12, offsetof(mavlink_meteo_t, humidity) }, \
+    5, \
+    {  { "time_usec", NULL, MAVLINK_TYPE_UINT32_T, 0, 0, offsetof(mavlink_meteo_t, time_usec) }, \
+         { "temperature", NULL, MAVLINK_TYPE_FLOAT, 0, 4, offsetof(mavlink_meteo_t, temperature) }, \
+         { "humidity", NULL, MAVLINK_TYPE_FLOAT, 0, 8, offsetof(mavlink_meteo_t, humidity) }, \
+         { "t_pot_v", NULL, MAVLINK_TYPE_FLOAT, 0, 12, offsetof(mavlink_meteo_t, t_pot_v) }, \
+         { "q_hu", NULL, MAVLINK_TYPE_FLOAT, 0, 16, offsetof(mavlink_meteo_t, q_hu) }, \
          } \
 }
 #else
 #define MAVLINK_MESSAGE_INFO_METEO { \
     "METEO", \
-    3, \
-    {  { "time_usec", NULL, MAVLINK_TYPE_UINT64_T, 0, 0, offsetof(mavlink_meteo_t, time_usec) }, \
-         { "temperature", NULL, MAVLINK_TYPE_FLOAT, 0, 8, offsetof(mavlink_meteo_t, temperature) }, \
-         { "humidity", NULL, MAVLINK_TYPE_FLOAT, 0, 12, offsetof(mavlink_meteo_t, humidity) }, \
+    5, \
+    {  { "time_usec", NULL, MAVLINK_TYPE_UINT32_T, 0, 0, offsetof(mavlink_meteo_t, time_usec) }, \
+         { "temperature", NULL, MAVLINK_TYPE_FLOAT, 0, 4, offsetof(mavlink_meteo_t, temperature) }, \
+         { "humidity", NULL, MAVLINK_TYPE_FLOAT, 0, 8, offsetof(mavlink_meteo_t, humidity) }, \
+         { "t_pot_v", NULL, MAVLINK_TYPE_FLOAT, 0, 12, offsetof(mavlink_meteo_t, t_pot_v) }, \
+         { "q_hu", NULL, MAVLINK_TYPE_FLOAT, 0, 16, offsetof(mavlink_meteo_t, q_hu) }, \
          } \
 }
 #endif
@@ -50,16 +56,20 @@ typedef struct __mavlink_meteo_t {
  * @param time_usec Timestamp (microseconds since system boot or since UNIX epoch).
  * @param temperature Temperature reading
  * @param humidity Humidity reading
+ * @param t_pot_v Virtual potential temperature
+ * @param q_hu specific humidity
  * @return length of the message in bytes (excluding serial stream start sign)
  */
 static inline uint16_t mavlink_msg_meteo_pack(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg,
-                               uint64_t time_usec, float temperature, float humidity)
+                               uint32_t time_usec, float temperature, float humidity, float t_pot_v, float q_hu)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
     char buf[MAVLINK_MSG_ID_METEO_LEN];
-    _mav_put_uint64_t(buf, 0, time_usec);
-    _mav_put_float(buf, 8, temperature);
-    _mav_put_float(buf, 12, humidity);
+    _mav_put_uint32_t(buf, 0, time_usec);
+    _mav_put_float(buf, 4, temperature);
+    _mav_put_float(buf, 8, humidity);
+    _mav_put_float(buf, 12, t_pot_v);
+    _mav_put_float(buf, 16, q_hu);
 
         memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, MAVLINK_MSG_ID_METEO_LEN);
 #else
@@ -67,6 +77,8 @@ static inline uint16_t mavlink_msg_meteo_pack(uint8_t system_id, uint8_t compone
     packet.time_usec = time_usec;
     packet.temperature = temperature;
     packet.humidity = humidity;
+    packet.t_pot_v = t_pot_v;
+    packet.q_hu = q_hu;
 
         memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, MAVLINK_MSG_ID_METEO_LEN);
 #endif
@@ -84,17 +96,21 @@ static inline uint16_t mavlink_msg_meteo_pack(uint8_t system_id, uint8_t compone
  * @param time_usec Timestamp (microseconds since system boot or since UNIX epoch).
  * @param temperature Temperature reading
  * @param humidity Humidity reading
+ * @param t_pot_v Virtual potential temperature
+ * @param q_hu specific humidity
  * @return length of the message in bytes (excluding serial stream start sign)
  */
 static inline uint16_t mavlink_msg_meteo_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan,
                                mavlink_message_t* msg,
-                                   uint64_t time_usec,float temperature,float humidity)
+                                   uint32_t time_usec,float temperature,float humidity,float t_pot_v,float q_hu)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
     char buf[MAVLINK_MSG_ID_METEO_LEN];
-    _mav_put_uint64_t(buf, 0, time_usec);
-    _mav_put_float(buf, 8, temperature);
-    _mav_put_float(buf, 12, humidity);
+    _mav_put_uint32_t(buf, 0, time_usec);
+    _mav_put_float(buf, 4, temperature);
+    _mav_put_float(buf, 8, humidity);
+    _mav_put_float(buf, 12, t_pot_v);
+    _mav_put_float(buf, 16, q_hu);
 
         memcpy(_MAV_PAYLOAD_NON_CONST(msg), buf, MAVLINK_MSG_ID_METEO_LEN);
 #else
@@ -102,6 +118,8 @@ static inline uint16_t mavlink_msg_meteo_pack_chan(uint8_t system_id, uint8_t co
     packet.time_usec = time_usec;
     packet.temperature = temperature;
     packet.humidity = humidity;
+    packet.t_pot_v = t_pot_v;
+    packet.q_hu = q_hu;
 
         memcpy(_MAV_PAYLOAD_NON_CONST(msg), &packet, MAVLINK_MSG_ID_METEO_LEN);
 #endif
@@ -120,7 +138,7 @@ static inline uint16_t mavlink_msg_meteo_pack_chan(uint8_t system_id, uint8_t co
  */
 static inline uint16_t mavlink_msg_meteo_encode(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg, const mavlink_meteo_t* meteo)
 {
-    return mavlink_msg_meteo_pack(system_id, component_id, msg, meteo->time_usec, meteo->temperature, meteo->humidity);
+    return mavlink_msg_meteo_pack(system_id, component_id, msg, meteo->time_usec, meteo->temperature, meteo->humidity, meteo->t_pot_v, meteo->q_hu);
 }
 
 /**
@@ -134,7 +152,7 @@ static inline uint16_t mavlink_msg_meteo_encode(uint8_t system_id, uint8_t compo
  */
 static inline uint16_t mavlink_msg_meteo_encode_chan(uint8_t system_id, uint8_t component_id, uint8_t chan, mavlink_message_t* msg, const mavlink_meteo_t* meteo)
 {
-    return mavlink_msg_meteo_pack_chan(system_id, component_id, chan, msg, meteo->time_usec, meteo->temperature, meteo->humidity);
+    return mavlink_msg_meteo_pack_chan(system_id, component_id, chan, msg, meteo->time_usec, meteo->temperature, meteo->humidity, meteo->t_pot_v, meteo->q_hu);
 }
 
 /**
@@ -144,16 +162,20 @@ static inline uint16_t mavlink_msg_meteo_encode_chan(uint8_t system_id, uint8_t 
  * @param time_usec Timestamp (microseconds since system boot or since UNIX epoch).
  * @param temperature Temperature reading
  * @param humidity Humidity reading
+ * @param t_pot_v Virtual potential temperature
+ * @param q_hu specific humidity
  */
 #ifdef MAVLINK_USE_CONVENIENCE_FUNCTIONS
 
-static inline void mavlink_msg_meteo_send(mavlink_channel_t chan, uint64_t time_usec, float temperature, float humidity)
+static inline void mavlink_msg_meteo_send(mavlink_channel_t chan, uint32_t time_usec, float temperature, float humidity, float t_pot_v, float q_hu)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
     char buf[MAVLINK_MSG_ID_METEO_LEN];
-    _mav_put_uint64_t(buf, 0, time_usec);
-    _mav_put_float(buf, 8, temperature);
-    _mav_put_float(buf, 12, humidity);
+    _mav_put_uint32_t(buf, 0, time_usec);
+    _mav_put_float(buf, 4, temperature);
+    _mav_put_float(buf, 8, humidity);
+    _mav_put_float(buf, 12, t_pot_v);
+    _mav_put_float(buf, 16, q_hu);
 
     _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_METEO, buf, MAVLINK_MSG_ID_METEO_MIN_LEN, MAVLINK_MSG_ID_METEO_LEN, MAVLINK_MSG_ID_METEO_CRC);
 #else
@@ -161,6 +183,8 @@ static inline void mavlink_msg_meteo_send(mavlink_channel_t chan, uint64_t time_
     packet.time_usec = time_usec;
     packet.temperature = temperature;
     packet.humidity = humidity;
+    packet.t_pot_v = t_pot_v;
+    packet.q_hu = q_hu;
 
     _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_METEO, (const char *)&packet, MAVLINK_MSG_ID_METEO_MIN_LEN, MAVLINK_MSG_ID_METEO_LEN, MAVLINK_MSG_ID_METEO_CRC);
 #endif
@@ -174,7 +198,7 @@ static inline void mavlink_msg_meteo_send(mavlink_channel_t chan, uint64_t time_
 static inline void mavlink_msg_meteo_send_struct(mavlink_channel_t chan, const mavlink_meteo_t* meteo)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
-    mavlink_msg_meteo_send(chan, meteo->time_usec, meteo->temperature, meteo->humidity);
+    mavlink_msg_meteo_send(chan, meteo->time_usec, meteo->temperature, meteo->humidity, meteo->t_pot_v, meteo->q_hu);
 #else
     _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_METEO, (const char *)meteo, MAVLINK_MSG_ID_METEO_MIN_LEN, MAVLINK_MSG_ID_METEO_LEN, MAVLINK_MSG_ID_METEO_CRC);
 #endif
@@ -188,13 +212,15 @@ static inline void mavlink_msg_meteo_send_struct(mavlink_channel_t chan, const m
   is usually the receive buffer for the channel, and allows a reply to an
   incoming message with minimum stack space usage.
  */
-static inline void mavlink_msg_meteo_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan,  uint64_t time_usec, float temperature, float humidity)
+static inline void mavlink_msg_meteo_send_buf(mavlink_message_t *msgbuf, mavlink_channel_t chan,  uint32_t time_usec, float temperature, float humidity, float t_pot_v, float q_hu)
 {
 #if MAVLINK_NEED_BYTE_SWAP || !MAVLINK_ALIGNED_FIELDS
     char *buf = (char *)msgbuf;
-    _mav_put_uint64_t(buf, 0, time_usec);
-    _mav_put_float(buf, 8, temperature);
-    _mav_put_float(buf, 12, humidity);
+    _mav_put_uint32_t(buf, 0, time_usec);
+    _mav_put_float(buf, 4, temperature);
+    _mav_put_float(buf, 8, humidity);
+    _mav_put_float(buf, 12, t_pot_v);
+    _mav_put_float(buf, 16, q_hu);
 
     _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_METEO, buf, MAVLINK_MSG_ID_METEO_MIN_LEN, MAVLINK_MSG_ID_METEO_LEN, MAVLINK_MSG_ID_METEO_CRC);
 #else
@@ -202,6 +228,8 @@ static inline void mavlink_msg_meteo_send_buf(mavlink_message_t *msgbuf, mavlink
     packet->time_usec = time_usec;
     packet->temperature = temperature;
     packet->humidity = humidity;
+    packet->t_pot_v = t_pot_v;
+    packet->q_hu = q_hu;
 
     _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_METEO, (const char *)packet, MAVLINK_MSG_ID_METEO_MIN_LEN, MAVLINK_MSG_ID_METEO_LEN, MAVLINK_MSG_ID_METEO_CRC);
 #endif
@@ -218,9 +246,9 @@ static inline void mavlink_msg_meteo_send_buf(mavlink_message_t *msgbuf, mavlink
  *
  * @return Timestamp (microseconds since system boot or since UNIX epoch).
  */
-static inline uint64_t mavlink_msg_meteo_get_time_usec(const mavlink_message_t* msg)
+static inline uint32_t mavlink_msg_meteo_get_time_usec(const mavlink_message_t* msg)
 {
-    return _MAV_RETURN_uint64_t(msg,  0);
+    return _MAV_RETURN_uint32_t(msg,  0);
 }
 
 /**
@@ -230,7 +258,7 @@ static inline uint64_t mavlink_msg_meteo_get_time_usec(const mavlink_message_t* 
  */
 static inline float mavlink_msg_meteo_get_temperature(const mavlink_message_t* msg)
 {
-    return _MAV_RETURN_float(msg,  8);
+    return _MAV_RETURN_float(msg,  4);
 }
 
 /**
@@ -240,7 +268,27 @@ static inline float mavlink_msg_meteo_get_temperature(const mavlink_message_t* m
  */
 static inline float mavlink_msg_meteo_get_humidity(const mavlink_message_t* msg)
 {
+    return _MAV_RETURN_float(msg,  8);
+}
+
+/**
+ * @brief Get field t_pot_v from meteo message
+ *
+ * @return Virtual potential temperature
+ */
+static inline float mavlink_msg_meteo_get_t_pot_v(const mavlink_message_t* msg)
+{
     return _MAV_RETURN_float(msg,  12);
+}
+
+/**
+ * @brief Get field q_hu from meteo message
+ *
+ * @return specific humidity
+ */
+static inline float mavlink_msg_meteo_get_q_hu(const mavlink_message_t* msg)
+{
+    return _MAV_RETURN_float(msg,  16);
 }
 
 /**
@@ -255,6 +303,8 @@ static inline void mavlink_msg_meteo_decode(const mavlink_message_t* msg, mavlin
     meteo->time_usec = mavlink_msg_meteo_get_time_usec(msg);
     meteo->temperature = mavlink_msg_meteo_get_temperature(msg);
     meteo->humidity = mavlink_msg_meteo_get_humidity(msg);
+    meteo->t_pot_v = mavlink_msg_meteo_get_t_pot_v(msg);
+    meteo->q_hu = mavlink_msg_meteo_get_q_hu(msg);
 #else
         uint8_t len = msg->len < MAVLINK_MSG_ID_METEO_LEN? msg->len : MAVLINK_MSG_ID_METEO_LEN;
         memset(meteo, 0, MAVLINK_MSG_ID_METEO_LEN);

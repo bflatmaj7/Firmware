@@ -70,7 +70,7 @@
 
 #include <uORB/uORB.h>
 #include <uORB/topics/meteo.h>
-#include <uORB/topics/sensor_baro.h>
+#include <uORB/topics/mhp.h>
 #include <uORB/topics/debug_key_value.h>
 
 #include <board_config.h>
@@ -196,7 +196,6 @@ HYT271::HYT271(int bus, int address) :
 {
 	/* enable debug() calls */
 	_debug_enabled = false;
-	_orb_sensor_baro_fd = orb_subscribe(ORB_ID(sensor_baro));
 
 	/* work_cancel in the dtor will explode if we don't do this... */
 	memset(&_work, 0, sizeof(_work));
@@ -216,9 +215,6 @@ HYT271::~HYT271()
 		orb_unadvertise(_meteo_topic);
 	}
 
-	if (_orb_sensor_baro_fd != -1) {
-		orb_unsubscribe(_orb_sensor_baro_fd);
-	}
 
 	if (_class_instance != -1) {
 		unregister_class_devname(METEO_BASE_DEVICE_PATH, _class_instance);
@@ -472,6 +468,8 @@ HYT271::collect()
 
 	ret = transfer(nullptr, 0, &val[0], 4);
 
+	_orb_sensor_baro_fd = orb_subscribe(ORB_ID(mhp));
+
 	if (ret < 0) {
 		DEVICE_DEBUG("error reading from sensor: %d", ret);
 		perf_count(_comms_errors);
@@ -482,10 +480,15 @@ HYT271::collect()
     float humidity = ((val[0] & 0x3f) << 8 | val[1]) * (100.0 / 0x3fff);
     float temperature = (val[2] << 8 | (val[3] & 0xfc)) * (165.0 / 0xfffc) - 40;
 
-	struct sensor_baro_s baro_msg;
+	struct mhp_s baro_msg;
 
-	orb_copy(ORB_ID(sensor_baro), _orb_sensor_baro_fd, &baro_msg);
-	float ps = baro_msg.pressure;
+	float ps;
+	if (orb_copy(ORB_ID(mhp), _orb_sensor_baro_fd, &baro_msg) == PX4_OK) {
+		ps = baro_msg.dpS/100;
+	}
+	else{
+		ps = 1000;
+	}
 
     float  kappa = 0.28585657;
     float E_hc = 6.107*pow(10,(7.45*(double)temperature/(235.0+(double)temperature))); //saturation vapor pressure
@@ -520,6 +523,10 @@ HYT271::collect()
 	poll_notify(POLLIN);
 
 	ret = OK;
+
+	if (_orb_sensor_baro_fd != -1) {
+		orb_unsubscribe(_orb_sensor_baro_fd);
+	}
 
 	perf_end(_sample_perf);
 	return ret;
