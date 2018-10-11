@@ -92,12 +92,27 @@ public:
 private:
 	char 				_port[20];
 	ELLIPSE_MESSAGE 	_msg;
+	float				_ax;
+	float				_ay;
+	float				_az;
+	float				_gx;
+	float				_gy;
+	float				_gz;
+	float				_mx;
+	float				_my;
+	float				_mz;
 	float				_roll;
 	float				_pitch;
 	float				_yaw;
 	float				_vns;
 	float				_vew;
 	float				_vud;
+	float				_lat;
+	float				_lon;
+	float				_alt;
+	float				_alt_ellipsoid;
+	unsigned			_sol_status;
+	short 				_imu_status;
 	int                 _conversion_interval;
 	work_s				_work;
 	ringbuffer::RingBuffer		*_reports;
@@ -161,12 +176,27 @@ extern "C" __EXPORT int ellipse_d_main(int argc, char *argv[]);
 
 ELLIPSE_D::ELLIPSE_D(const char *port) :
 	CDev("ELLIPSE_D", IMU0_DEVICE_PATH),
+	_ax(-99),
+	_ay(-99),
+	_az(-99),
+	_gx(-99),
+	_gy(-99),
+	_gz(-99),
+	_mx(-99),
+	_my(-99),
+	_mz(-99),
 	_roll(-99),
 	_pitch(-99),
 	_yaw(-99),
 	_vns(-99),
 	_vew(-99),
 	_vud(-99),
+	_lat(-99),
+	_lon(-99),
+	_alt(-99),
+	_alt_ellipsoid(-99),
+	_sol_status(0),
+	_imu_status(0),
 	_conversion_interval(-1),
 	_reports(nullptr),
 	_measure_ticks(0),
@@ -254,12 +284,27 @@ ELLIPSE_D::~ELLIPSE_D()
 int ELLIPSE_D::init()
 {
 
+	_ax = 0.0f;
+	_ay = 0.0f;
+	_az = 0.0f;
+	_gx = 0.0f;
+	_gy = 0.0f;
+	_gz = 0.0f;
+	_mx = 0.0f;
+	_my = 0.0f;
+	_mz = 0.0f;
 	_roll = 0.0f;
 	_pitch = 0.0f;
 	_yaw = 0.0f;
 	_vns = 0.0f;
 	_vew = 0.0f;
 	_vud = 0.0f;
+	_lat = 0.0f;
+	_lon = 0.0f;
+	_alt = 0.0f;
+	_alt_ellipsoid = 0.0f;
+	_sol_status = 0;
+	_imu_status = 0;
 	_conversion_interval =	10000;
 	/* status */
 	int ret = 0;
@@ -518,6 +563,20 @@ ELLIPSE_D::handle_msg(ELLIPSE_MESSAGE *msg)
 {
 
 	switch (msg->id){
+	case SBG_ECOM_LOG_IMU_DATA:
+		_imu_status = (*(short *)&msg->data[4]);
+		_ax = (*(float *)&msg->data[6]);
+		_ay = (*(float *)&msg->data[10]);
+		_az = (*(float *)&msg->data[14]);
+		_gx = (*(float *)&msg->data[18]);
+		_gy = (*(float *)&msg->data[22]);
+		_gz = (*(float *)&msg->data[26]);
+		break;
+	case SBG_ECOM_LOG_MAG:
+		_mx = (*(float *)&msg->data[6]);
+		_my = (*(float *)&msg->data[10]);
+		_mz = (*(float *)&msg->data[14]);
+		break;
 	case SBG_ECOM_LOG_EKF_EULER:
 		_roll = (*(float *)&msg->data[4])*180/PI;
 		_pitch = (*(float *)&msg->data[8])*180/PI;
@@ -527,16 +586,32 @@ ELLIPSE_D::handle_msg(ELLIPSE_MESSAGE *msg)
 		_vns = *(float *)&msg->data[4];
 		_vew = *(float *)&msg->data[8];
 		_vud = *(float *)&msg->data[12];
+		_lat = (int)((*(double *)&msg->data[28])*1e7);
+		_lon = (int)((*(double *)&msg->data[36])*1e7);
+		_alt = (int)((*(double *)&msg->data[44])*1000);
+		_alt_ellipsoid = (int)((*(double *)&msg->data[28])*1000)-(int)((*(float *)&msg->data[36])*1000);
+		_sol_status = *(unsigned *)&msg->data[68];
 
 		struct ins_s report;
 
 		report.timestamp = hrt_absolute_time();
+		report.ax = _ax;
+		report.ay = _ay;
+		report.az = _az;
+		report.gx = _gx;
+		report.gy = _gy;
+		report.gz = _gz;
+		report.mx = _mx;
+		report.my = _my;
+		report.mz = _mz;
 		report.roll = _roll;
 		report.pitch = _pitch;
 		report.yaw = _yaw;
 		report.vns = _vns;
 		report.vew = _vew;
 		report.vud = _vud;
+		report.sol_status = _sol_status;
+		report.imu_status = _imu_status;
 		/* TODO: set proper ID */
 		//report.id = 0;
 
@@ -550,10 +625,10 @@ ELLIPSE_D::handle_msg(ELLIPSE_MESSAGE *msg)
 		_report_gps_pos = {};
 		_report_gps_pos.timestamp = hrt_absolute_time();
 		_report_gps_pos.time_utc_usec =  (*(int *)&msg->data[8])* 1000ULL;
-		_report_gps_pos.lat = (int)((*(double *)&msg->data[12])*1e7);
-		_report_gps_pos.lon = (int)((*(double *)&msg->data[20])*1e7);
-		_report_gps_pos.alt_ellipsoid = (int)((*(double *)&msg->data[28])*1000);
-		_report_gps_pos.alt = (int)((*(double *)&msg->data[28])*1000)-(int)((*(float *)&msg->data[36])*1000);
+		_report_gps_pos.lat = _lat;
+		_report_gps_pos.lon = _lon;
+		_report_gps_pos.alt = _alt;
+		_report_gps_pos.alt_ellipsoid = _alt_ellipsoid;
 		_report_gps_pos.s_variance_m_s = 0.5f;
 		_report_gps_pos.c_variance_rad = 0.1f;
 		_report_gps_pos.eph = (*(float *)&msg->data[40]);

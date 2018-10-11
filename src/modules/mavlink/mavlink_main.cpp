@@ -2011,9 +2011,9 @@ Mavlink::task_main(int argc, char *argv[])
 		configure_stream("ADSB_VEHICLE");
 		configure_stream("COLLISION");
 		configure_stream("DISTANCE_SENSOR", 0.5f);
-		configure_stream("METEO", 0.5f);
-		configure_stream("MHP", 0.5f);
-		configure_stream("INS", 0.5f);
+		configure_stream("METEO", 1.0f);
+		configure_stream("MHP", 1.0f);
+		configure_stream("INS", 1.0f);
 		configure_stream("OPTICAL_FLOW_RAD", 1.0f);
 		configure_stream("VISION_POSITION_ESTIMATE", 1.0f);
 		configure_stream("ESTIMATOR_STATUS", 0.5f);

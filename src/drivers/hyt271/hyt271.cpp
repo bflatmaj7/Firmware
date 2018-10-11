@@ -490,7 +490,7 @@ HYT271::collect()
 		ps = 1000;
 	}
 
-    float  kappa = 0.28585657;
+    float kappa = 0.28585657;
     float E_hc = 6.107*pow(10,(7.45*(double)temperature/(235.0+(double)temperature))); //saturation vapor pressure
     float e_hu = (double)humidity / 100.0 * (double)E_hc; // hPa
     float m_hu = 621.97 * (double)e_hu / ((double)ps - (double)e_hu); //mixing ratio

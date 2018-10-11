@@ -169,6 +169,9 @@ MhpWindModule::cycle()
 {
 	perf_count(_perf_interval);
 	perf_begin(_perf_elapsed);
+	const float PI = 3.14159265;
+	const float D2R = PI/180;
+	const float R2D = 180/PI;
 
 	bool param_updated;
 	orb_check(_param_sub, &param_updated);
@@ -204,119 +207,73 @@ MhpWindModule::cycle()
 	}
 
 
+	// if all data is valid, publish wind measurement
+	wind_estimate_s wind_est = {};
 	if (ins_valid && mhp_valid && meteo_valid) {
 
-		// if we fused either airspeed or sideslip we publish a wind_estimate message
-		wind_estimate_s wind_est = {};
 
+		float droll = 0.0;  // in deg
+		float dpitch = -2.0;  // in deg
+		float dyaw = -5.0;  // in deg
+		float dtas = 1.03;
 
-//		  dpitch = 0.0;  // in deg
-//		  dyaw = 0.0;  // in deg
-//		  droll = 0.0;  // in deg
-//		  dtas = 1.0;
-//
-//		  if(wcor == "on")
-//		    {
-//			  ifstream wind_in;
-//			  string line_wind;
-//			  string input_wind[4];
-//			  string empty (" ");
-//			  vector<string> elements;
-//
-//			  // First check flight specific wind correction coefficients
-//			  wind_in.open(wcor_file2.c_str(),ios_base::in);	// open data file
-//			  if(!wind_in)					// check file
-//			  {
-//				  // If no flight specific correction coefficients, take system correction coefficients
-//				  wind_in.open(wcor_file.c_str(),ios_base::in);	// open data file
-//				  if(!wind_in)					// check file
-//					    cout << "It is not possible to open wind calibration file" << endl;
-//			  }
-//
-//			  while ( getline(wind_in, line_wind)  )		// reading  lines from data
-//			    {
-//			      if (line_wind[0] != '#')                  // skip lines start with '#'
-//				{
-//				  for (k=0; k<4; k++)
-//				    {
-//				      input_wind[k] = stringsplit(line_wind, empty, elements)[k] ;
-//				    }
-//				  dyaw = strtod(input_wind[0].c_str(),NULL);
-//				  dpitch = strtod(input_wind[1].c_str(),NULL);
-//				  droll = strtod(input_wind[2].c_str(),NULL);
-//				  dtas = strtod(input_wind[3].c_str(),NULL);
-//
-//				}
-//			    }
-//			  wind_in.close();
-//		    }
-//
-//		  // correct the attitude angles and tas using the correction factors
-//		  for(k=0;k<row;k++)
-//		    {
-//		      tas[k] = tas[k] * dtas;
-//		      pitch[k] = pitch[k] + dpitch * D2R ;
-//		      thead[k] = thead[k] + dyaw * D2R ;
-//		      roll[k] = roll[k] + droll * D2R ;
-//		    }
-//
-//		  // The tas vector is calculated in x, y and z-direction (body-fixed
-//		  // coordinate system using alpha and (corrected) beta
-//		  for(k=0;k<row;k++)
-//		    {
-//		      D[k] = sqrt(1.0 +pow((tan(alpha[k])),2.0) + pow((tan(beta[k])),2.0) );
-//		      D[k] = 1.0 / D[k];
-//		      tas_bx[k] = tas[k] * D[k];
-//		      tas_by[k] = tas[k] * D[k] * tan(beta[k]);
-//		      tas_bz[k] = tas[k] * D[k] * tan(alpha[k]); // positive downwards!
-//		    }
-//
-//		  // The true airspeed vector is transformed from body-fixed
-//		  // into geodetic coordinate system using the transformation matrix
-//
-//		  for(k=0;k<row;k++)
-//		    {
-//		      tas_gx[k] = ( tas_bx[k] * (cos(pitch[k]) * cos(thead[k]))) +	( tas_by[k] * (sin(roll[k]) * sin(pitch[k]) * cos(thead[k]) - cos(roll[k]) * sin(thead[k]))) + ( tas_bz[k] * (cos(roll[k]) * sin(pitch[k]) * cos(thead[k]) + sin(roll[k]) * sin(thead[k]))) ;
-//		      tas_gy[k] = ( tas_bx[k] * (cos(pitch[k]) * sin(thead[k]))) +	( tas_by[k] * (sin(roll[k]) * sin(pitch[k]) * sin(thead[k]) + cos(roll[k]) * cos(thead[k]))) + ( tas_bz[k] * (cos(roll[k]) * sin(pitch[k]) * sin(thead[k]) - sin(roll[k]) * cos(thead[k]))) ;
-//		      tas_gz[k] = ( tas_bx[k] * (-1.0 * sin(pitch[k]))) + ( tas_by[k] * (sin(roll[k]) * cos(pitch[k]))) + ( tas_bz[k] * (cos(roll[k]) * cos(pitch[k]))) ;
-//		    }
-//
-//		  // the true airspeed components (geodetic coord.) are substracted from
-//		  // the measured groundspeed components (geodetic coord.) to become
-//		  // the meteorological wind vector.
-//
-//		  for(k=0;k<row;k++)
-//		    {
-//		      u[k] = vew[k] - tas_gy[k]; // Positive in east direction
-//		      v[k] = vns[k] - tas_gx[k]; // Positive in north direction
-//		      w[k] = -1.0 * (vud[k] - tas_gz[k]); // Positive Upwards
-//
-//		      ff[k] = sqrt( (u[k]*u[k]) + (v[k]*v[k]) ); // windspeed
-//		      dd[k] = atan(u[k] / v[k]) + PI;
-//		      if(v[k]< 0.0)
-//			dd[k] = dd[k] - PI;
-//		      dd[k] = dd[k] - 2.0*PI*floor(dd[k]/(2.0*PI)); // dd between 0 and 2* PI
-//		      dd[k] = dd[k] * R2D; // in degree
-//		    }
-//
-//		  // write results in data structure
-//
-//		 for(k=0;k<row;k++)
-//		    {
-//		      data[index.u].value[k] = u[k] ; // u-component
-//		      data[index.v].value[k] = v[k] ; // v-component
-//		      data[index.w].value[k] = w[k] ; // w-component
-//		      data[index.ff].value[k] =  ff[k] ; // wind speed
-//		      data[index.dd].value[k] =  dd[k] ; // wind direction
-//		    }
-//
+		// correct the attitude angles and tas using the correction factors
+		float tas = mhp.tas * dtas;
+		float pitch = (ins.pitch + dpitch) * D2R ;
+		float thead = (ins.yaw + dyaw) * D2R ;
+		float roll = (ins.roll + droll) * D2R ;
+
+		// The tas vector is calculated in x, y and z-direction (body-fixed
+		// coordinate system using alpha and (corrected) beta
+		float alpha = mhp.aoa * D2R;
+		float beta = mhp.aos * D2R;
+		float D = sqrt(1.0 +pow((tan(alpha)),2.0) + pow((tan(beta)),2.0) );
+		D = 1 / D;
+		float tas_bx = tas * D;
+		float tas_by = tas * D * (float)tan(beta);
+		float tas_bz = tas * D * (float)tan(alpha); // positive downwards!
+
+		// The true airspeed vector is transformed from body-fixed
+		// into geodetic coordinate system using the transformation matrix
+
+		float tas_gx = ( tas_bx * ((float)cos(pitch) * (float)cos(thead))) +	( tas_by * ((float)sin(roll) * (float)sin(pitch) * (float)cos(thead) - (float)cos(roll) * (float)sin(thead))) + ( tas_bz * ((float)cos(roll) * (float)sin(pitch) * (float)cos(thead) + (float)sin(roll) * (float)sin(thead))) ;
+		float tas_gy = ( tas_bx * ((float)cos(pitch) * (float)sin(thead))) +	( tas_by * ((float)sin(roll) * (float)sin(pitch) * (float)sin(thead) + (float)cos(roll) * (float)cos(thead))) + ( tas_bz * ((float)cos(roll) * (float)sin(pitch) * (float)sin(thead) - (float)sin(roll) * (float)cos(thead))) ;
+		float tas_gz = ( tas_bx * (float)(-1.0 * sin(pitch))) + ( tas_by * ((float)sin(roll) * (float)cos(pitch))) + ( tas_bz * ((float)cos(roll) * (float)cos(pitch))) ;
+
+		// the true airspeed components (geodetic coord.) are substracted from
+		// the measured groundspeed components (geodetic coord.) to become
+		// the meteorological wind vector.
+
+		float u = ins.vew - tas_gy; // Positive in east direction
+		float v = ins.vns - tas_gx; // Positive in north direction
+		float w = -1 * (ins.vud - tas_gz); // Positive Upwards
+
+		float ff = sqrt( (u*u) + (v*v) ); // windspeed
+		float dd = (float)atan(u / v) + PI;
+		if(v< 0)	dd = dd - PI;
+		dd = dd - 2*PI*(float)floor(dd/(2*PI)); // dd between 0 and 2* PI
+		dd = dd * R2D; // in degree
+
 		wind_est.timestamp = time_now_usec;
-//		wind_est.windspeed_north = wind[0];
-//		wind_est.windspeed_east = wind[1];
+		wind_est.windspeed_north = v;
+		wind_est.windspeed_east = u;
+		wind_est.windspeed_up = w;
+		wind_est.windspeed_abs = ff;
+		wind_est.winddirection = dd;
 
 		int instance;
 		orb_publish_auto(ORB_ID(wind_estimate), &_wind_est_pub, &wind_est, &instance, ORB_PRIO_DEFAULT);
 	}
+
+//	wind_est.timestamp = time_now_usec;
+//	wind_est.windspeed_north = 1;
+//	wind_est.windspeed_east = 2;
+//	wind_est.windspeed_up = 3;
+//	wind_est.windspeed_abs = 4;
+//	wind_est.winddirection = 5;
+//
+//	int instance;
+//	orb_publish_auto(ORB_ID(wind_estimate), &_wind_est_pub, &wind_est, &instance, ORB_PRIO_DEFAULT);
 
 	perf_end(_perf_elapsed);
 

@@ -31,3 +31,4 @@ land_detector start fixedwing
 # Start Wind and Airspeed Scale Estimator
 #
 #wind_estimator start
+

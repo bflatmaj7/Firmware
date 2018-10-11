@@ -401,6 +401,7 @@ fi
 if param greater SENS_EN_PSC5B 0
 then
 	psc5b start
+	mhp_wind_measurement start
 fi
 
 # mb12xx sonar sensor

@@ -3882,7 +3882,7 @@ protected:
 
 			msg.wind_x = wind_estimate.windspeed_north;
 			msg.wind_y = wind_estimate.windspeed_east;
-			msg.wind_z = 0.0f;
+			msg.wind_z = wind_estimate.windspeed_up;
 
 			msg.var_horiz = wind_estimate.variance_north + wind_estimate.variance_east;
 			msg.var_vert = 0.0f;
@@ -4088,6 +4088,15 @@ protected:
             mavlink_ins_t _msg_ins;  //make sure mavlink_ca_trajectory_t is the definition of your custom MAVLink message
 
             _msg_ins.time_usec = _ins.timestamp;
+            _msg_ins.ax = _ins.ax;
+            _msg_ins.ay = _ins.ay;
+            _msg_ins.az = _ins.az;
+            _msg_ins.gx = _ins.gx;
+            _msg_ins.gy = _ins.gy;
+            _msg_ins.gz = _ins.gz;
+            _msg_ins.mx = _ins.mx;
+            _msg_ins.my = _ins.my;
+            _msg_ins.mz = _ins.mz;
             _msg_ins.roll = _ins.roll;
             _msg_ins.pitch  = _ins.pitch;
             _msg_ins.yaw  = _ins.yaw;
