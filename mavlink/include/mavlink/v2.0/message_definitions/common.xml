@@ -4717,6 +4717,15 @@
     <message id="334" name="INS">
       <description>Inertial navigation system measurements</description>
       <field type="uint32_t" name="time_usec" units="us">Timestamp (microseconds since system boot or since UNIX epoch).</field>
+      <field type="float" name="ax">Acceleration in x-axis</field>
+      <field type="float" name="ay">Acceleration in y-axis</field>
+      <field type="float" name="az">Acceleration in z-axis</field>
+      <field type="float" name="gx">Angular rate in x-axis</field>
+      <field type="float" name="gy">Angular rate in y-axis</field>
+      <field type="float" name="gz">Angular rate in z-axis</field>
+      <field type="float" name="mx">Magnetic field in x-axis</field>
+      <field type="float" name="my">Magnetic field in y-axis</field>
+      <field type="float" name="mz">Magnetic field in z-axis</field>
       <field type="float" name="roll">Roll angle</field>
       <field type="float" name="pitch">Pitch angle</field>
       <field type="float" name="yaw">Yaw angle</field>

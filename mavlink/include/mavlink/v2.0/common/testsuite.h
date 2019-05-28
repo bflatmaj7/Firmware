@@ -10041,11 +10041,20 @@ static void mavlink_test_ins(uint8_t system_id, uint8_t component_id, mavlink_me
         uint8_t buffer[MAVLINK_MAX_PACKET_LEN];
         uint16_t i;
     mavlink_ins_t packet_in = {
-        963497464,45.0,73.0,101.0,129.0,157.0,185.0
+        963497464,45.0,73.0,101.0,129.0,157.0,185.0,213.0,241.0,269.0,297.0,325.0,353.0,381.0,409.0,437.0
     };
     mavlink_ins_t packet1, packet2;
         memset(&packet1, 0, sizeof(packet1));
         packet1.time_usec = packet_in.time_usec;
+        packet1.ax = packet_in.ax;
+        packet1.ay = packet_in.ay;
+        packet1.az = packet_in.az;
+        packet1.gx = packet_in.gx;
+        packet1.gy = packet_in.gy;
+        packet1.gz = packet_in.gz;
+        packet1.mx = packet_in.mx;
+        packet1.my = packet_in.my;
+        packet1.mz = packet_in.mz;
         packet1.roll = packet_in.roll;
         packet1.pitch = packet_in.pitch;
         packet1.yaw = packet_in.yaw;
@@ -10066,12 +10075,12 @@ static void mavlink_test_ins(uint8_t system_id, uint8_t component_id, mavlink_me
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
 
         memset(&packet2, 0, sizeof(packet2));
-    mavlink_msg_ins_pack(system_id, component_id, &msg , packet1.time_usec , packet1.roll , packet1.pitch , packet1.yaw , packet1.vns , packet1.vew , packet1.vud );
+    mavlink_msg_ins_pack(system_id, component_id, &msg , packet1.time_usec , packet1.ax , packet1.ay , packet1.az , packet1.gx , packet1.gy , packet1.gz , packet1.mx , packet1.my , packet1.mz , packet1.roll , packet1.pitch , packet1.yaw , packet1.vns , packet1.vew , packet1.vud );
     mavlink_msg_ins_decode(&msg, &packet2);
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
 
         memset(&packet2, 0, sizeof(packet2));
-    mavlink_msg_ins_pack_chan(system_id, component_id, MAVLINK_COMM_0, &msg , packet1.time_usec , packet1.roll , packet1.pitch , packet1.yaw , packet1.vns , packet1.vew , packet1.vud );
+    mavlink_msg_ins_pack_chan(system_id, component_id, MAVLINK_COMM_0, &msg , packet1.time_usec , packet1.ax , packet1.ay , packet1.az , packet1.gx , packet1.gy , packet1.gz , packet1.mx , packet1.my , packet1.mz , packet1.roll , packet1.pitch , packet1.yaw , packet1.vns , packet1.vew , packet1.vud );
     mavlink_msg_ins_decode(&msg, &packet2);
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
 
@@ -10084,7 +10093,7 @@ static void mavlink_test_ins(uint8_t system_id, uint8_t component_id, mavlink_me
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
         
         memset(&packet2, 0, sizeof(packet2));
-    mavlink_msg_ins_send(MAVLINK_COMM_1 , packet1.time_usec , packet1.roll , packet1.pitch , packet1.yaw , packet1.vns , packet1.vew , packet1.vud );
+    mavlink_msg_ins_send(MAVLINK_COMM_1 , packet1.time_usec , packet1.ax , packet1.ay , packet1.az , packet1.gx , packet1.gy , packet1.gz , packet1.mx , packet1.my , packet1.mz , packet1.roll , packet1.pitch , packet1.yaw , packet1.vns , packet1.vew , packet1.vud );
     mavlink_msg_ins_decode(last_msg, &packet2);
         MAVLINK_ASSERT(memcmp(&packet1, &packet2, sizeof(packet1)) == 0);
 }
