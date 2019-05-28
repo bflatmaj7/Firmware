@@ -7,10 +7,11 @@ set(config_module_list
 	#
 	# Board support modules
 	#
-	drivers/hyt271
-	drivers/imu/sbg_ellipse_d
-	drivers/psc5b
-	drivers/barometer
+	#drivers/hyt271
+	#drivers/imu/sbg_ellipse_d
+	#drivers/psc5b
+	drivers/pt100
+	#drivers/barometer
 	#drivers/differential_pressure
 	#drivers/distance_sensor
 	#drivers/magnetometer
@@ -84,7 +85,7 @@ set(config_module_list
 	modules/commander
 	modules/events
 	#modules/gpio_led
-	modules/land_detector
+	#modules/land_detector
 	modules/load_mon
 	modules/mavlink
 	modules/navigator

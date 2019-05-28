@@ -249,9 +249,9 @@ MhpWindModule::cycle()
 		float w = -1 * (ins.vud - tas_gz); // Positive Upwards
 
 		float ff = sqrt( (u*u) + (v*v) ); // windspeed
-		float dd = (float)atan(u / v) + PI;
-		if(v< 0)	dd = dd - PI;
-		dd = dd - 2*PI*(float)floor(dd/(2*PI)); // dd between 0 and 2* PI
+		float dd = (float)atan2(u, v) + PI;
+//		if(v< 0)	dd = dd - PI;
+//		dd = dd - 2*PI*(float)floor(dd/(2*PI)); // dd between 0 and 2* PI
 		dd = dd * R2D; // in degree
 
 		wind_est.timestamp = time_now_usec;

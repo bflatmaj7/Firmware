@@ -391,6 +391,12 @@ then
 	hyt271 start
 fi
 
+# MAX31865 pt100 temp sensor
+if param greater SENS_EN_PT100 0
+then
+	pt100 start
+fi
+
 # inertial navigation system
 if param greater SENS_EN_ELLIPSE 0
 then

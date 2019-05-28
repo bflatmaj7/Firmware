@@ -94,8 +94,10 @@ enum PSC5B_PARSE_STATE {
 	PSC5B_PARSE_STATE3_DATA = 2
 };
 
-#define PSC5B_CANID1 0x1101
-#define PSC5B_CANID2 0x1201
+//#define PSC5B_CANID1 0x1101
+//#define PSC5B_CANID2 0x1201
+#define PSC5B_CANID1 0x5505
+#define PSC5B_CANID2 0x5605
 
 int psc5b_parser(char c, char *parserbuf,  unsigned *parserbuf_index, PSC5B_PARSE_STATE *state,PSC5B_MESSAGE *msg);
 
@@ -239,7 +241,7 @@ PSC5B::PSC5B(const char *port) :
 	/* no parity, one stop bit */
 	uart_config.c_cflag &= ~(CSTOPB | PARENB);
 
-	unsigned speed = B9600;
+	unsigned speed = B57600;
 
 	/* set baud rate */
 	if ((termios_state = cfsetispeed(&uart_config, speed)) < 0) {
@@ -254,6 +256,11 @@ PSC5B::PSC5B(const char *port) :
 		warnx("ERR baud %d ATTR", termios_state);
 	}
 
+//	char test_str[3];
+//	sprintf(test_str,"s: %d",_parse_state);
+//	::write(_fd,"+++",3);
+//	::write(_fd,"AT+C=18\r\n",9);
+//	::write(_fd,"AT+Q\r\n",6);
 	// disable debug() calls
 	_debug_enabled = false;
 
@@ -561,7 +568,7 @@ PSC5B::handle_msg(PSC5B_MESSAGE *msg)
 	case PSC5B_CANID2:
 		_dp1 = (float)(*(short *)&msg->data[0]);
 		_dpS = (*(short *)&msg->data[2])*5;
-		calc_flow();
+//		calc_flow();
 		break;
 	default:
 		break;
@@ -588,7 +595,7 @@ PSC5B::handle_msg(PSC5B_MESSAGE *msg)
 	report.aos = _aos;
 	report.tas = _tas;
 	/* TODO: set proper ID */
-	//report.id = 0;
+	report.id = 989;
 
 	/* publish it */
 	orb_publish(ORB_ID(mhp), _mhp_topic, &report);
@@ -607,6 +614,8 @@ PSC5B::calc_flow()
 	double k_a = (double)(_dp1-_dp3)/((double)_dp0-dP) ; // alpha
 	double k_b = (double)(_dp2-_dp4)/((double)_dp0-dP) ; // beta
 
+	double M_rough = sqrt(2*(double)_dp0/((double)_dpS*1.4));
+
     // Calculate the dimensionless pressure coefficients
 	double Si_a=0.0;
 	double Si_b=0.0;
@@ -622,10 +631,30 @@ PSC5B::calc_flow()
 		double Sj_p=0.0;
 		for(int j=0;j<poly_order;j++)
 		  {
-			Sj_a = Sj_a + poly_alpha[i*poly_order+j] * pow(k_b,j);
-			Sj_b = Sj_b + poly_beta[i*poly_order+j] * pow(k_b,j);
-			Sj_q = Sj_q + poly_kq[i*poly_order+j] * pow(k_b,j);
-			Sj_p = Sj_p + poly_kp[i*poly_order+j] * pow(k_b,j);
+			if (M_rough<0.045){
+				Sj_a = Sj_a + poly_alpha_0025[i*poly_order+j] * pow(k_b,j);
+				Sj_b = Sj_b + poly_beta_0025[i*poly_order+j] * pow(k_b,j);
+				Sj_q = Sj_q + poly_kq_0025[i*poly_order+j] * pow(k_b,j);
+				Sj_p = Sj_p + poly_kp_0025[i*poly_order+j] * pow(k_b,j);
+			}
+			else if (M_rough>=0.045 && M_rough <0.1){
+				Sj_a = Sj_a + poly_alpha_0070[i*poly_order+j] * pow(k_b,j);
+				Sj_b = Sj_b + poly_beta_0070[i*poly_order+j] * pow(k_b,j);
+				Sj_q = Sj_q + poly_kq_0070[i*poly_order+j] * pow(k_b,j);
+				Sj_p = Sj_p + poly_kp_0070[i*poly_order+j] * pow(k_b,j);
+			}
+			else if (M_rough>=0.1 && M_rough <0.15){
+				Sj_a = Sj_a + poly_alpha_0125[i*poly_order+j] * pow(k_b,j);
+				Sj_b = Sj_b + poly_beta_0125[i*poly_order+j] * pow(k_b,j);
+				Sj_q = Sj_q + poly_kq_0125[i*poly_order+j] * pow(k_b,j);
+				Sj_p = Sj_p + poly_kp_0125[i*poly_order+j] * pow(k_b,j);
+			}
+			else{
+				Sj_a = Sj_a + poly_alpha_0175[i*poly_order+j] * pow(k_b,j);
+				Sj_b = Sj_b + poly_beta_0175[i*poly_order+j] * pow(k_b,j);
+				Sj_q = Sj_q + poly_kq_0175[i*poly_order+j] * pow(k_b,j);
+				Sj_p = Sj_p + poly_kp_0175[i*poly_order+j] * pow(k_b,j);
+			}
 	 //		    cout << Sj_a << "  " << a[i][j] << "  " << pow(k_b[k],j) << "  " << k_b[k] << endl;
 			//cout << Sj_b << "  " << b[i][j] << "  " << pow(k_b[k],j) << endl;
 			//cout << Sj_p << "  " << pt[i][j] << "  " << pow(k_b[k],j) << endl;
