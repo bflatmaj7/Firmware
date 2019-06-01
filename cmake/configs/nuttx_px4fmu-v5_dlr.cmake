@@ -7,10 +7,11 @@ set(config_module_list
 	#
 	# Board support modules
 	#
-	#drivers/hyt271
+	drivers/hyt271
 	#drivers/imu/sbg_ellipse_d
 	#drivers/psc5b
-	drivers/pt100
+	#drivers/pt100
+	drivers/max31865
 	#drivers/barometer
 	#drivers/differential_pressure
 	#drivers/distance_sensor
@@ -29,8 +30,8 @@ set(config_module_list
 	#drivers/imu/mpu6000
 	#drivers/imu/mpu9250
 	#drivers/oreoled
-	drivers/pwm_input
-	drivers/pwm_out_sim
+	#drivers/pwm_input
+	#drivers/pwm_out_sim
 	drivers/px4flow
 	drivers/px4fmu
 	drivers/px4io

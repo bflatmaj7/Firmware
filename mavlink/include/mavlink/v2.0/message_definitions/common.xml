@@ -4713,6 +4713,7 @@
       <field type="float" name="humidity">Humidity reading</field>
       <field type="float" name="t_pot_v">Virtual potential temperature</field>
       <field type="float" name="q_hu">specific humidity</field>
+      <field type="float" name="pt100">PT100 temperature</field>
     </message>
     <message id="334" name="INS">
       <description>Inertial navigation system measurements</description>

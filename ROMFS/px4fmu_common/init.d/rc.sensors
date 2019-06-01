@@ -394,7 +394,7 @@ fi
 # MAX31865 pt100 temp sensor
 if param greater SENS_EN_PT100 0
 then
-	pt100 start
+	max31865 start
 fi
 
 # inertial navigation system

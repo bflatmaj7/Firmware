@@ -5,14 +5,14 @@
 
 MAVPACKED(
 typedef struct __mavlink_trajectory_t {
- uint64_t time_usec; /*< Timestamp (microseconds since system boot or since UNIX epoch).*/
- float point_1[11]; /*< Depending on the type (see MAV_TRAJECTORY_REPRESENTATION)*/
- float point_2[11]; /*< Depending on the type (see MAV_TRAJECTORY_REPRESENTATION)*/
- float point_3[11]; /*< Depending on the type (see MAV_TRAJECTORY_REPRESENTATION)*/
- float point_4[11]; /*< Depending on the type (see MAV_TRAJECTORY_REPRESENTATION)*/
- float point_5[11]; /*< Depending on the type (see MAV_TRAJECTORY_REPRESENTATION)*/
- uint8_t type; /*< Waypoints, Bezier etc. see MAV_TRAJECTORY_REPRESENTATION*/
- uint8_t point_valid[5]; /*< States if respective point is valid (boolean)*/
+ uint64_t time_usec; /*< [us] Timestamp (microseconds since system boot or since UNIX epoch).*/
+ float point_1[11]; /*<  Depending on the type (see MAV_TRAJECTORY_REPRESENTATION)*/
+ float point_2[11]; /*<  Depending on the type (see MAV_TRAJECTORY_REPRESENTATION)*/
+ float point_3[11]; /*<  Depending on the type (see MAV_TRAJECTORY_REPRESENTATION)*/
+ float point_4[11]; /*<  Depending on the type (see MAV_TRAJECTORY_REPRESENTATION)*/
+ float point_5[11]; /*<  Depending on the type (see MAV_TRAJECTORY_REPRESENTATION)*/
+ uint8_t type; /*<  Waypoints, Bezier etc. see MAV_TRAJECTORY_REPRESENTATION*/
+ uint8_t point_valid[5]; /*<  States if respective point is valid (boolean)*/
 }) mavlink_trajectory_t;
 
 #define MAVLINK_MSG_ID_TRAJECTORY_LEN 234
@@ -67,14 +67,14 @@ typedef struct __mavlink_trajectory_t {
  * @param component_id ID of this component (e.g. 200 for IMU)
  * @param msg The MAVLink message to compress the data into
  *
- * @param time_usec Timestamp (microseconds since system boot or since UNIX epoch).
- * @param type Waypoints, Bezier etc. see MAV_TRAJECTORY_REPRESENTATION
- * @param point_1 Depending on the type (see MAV_TRAJECTORY_REPRESENTATION)
- * @param point_2 Depending on the type (see MAV_TRAJECTORY_REPRESENTATION)
- * @param point_3 Depending on the type (see MAV_TRAJECTORY_REPRESENTATION)
- * @param point_4 Depending on the type (see MAV_TRAJECTORY_REPRESENTATION)
- * @param point_5 Depending on the type (see MAV_TRAJECTORY_REPRESENTATION)
- * @param point_valid States if respective point is valid (boolean)
+ * @param time_usec [us] Timestamp (microseconds since system boot or since UNIX epoch).
+ * @param type  Waypoints, Bezier etc. see MAV_TRAJECTORY_REPRESENTATION
+ * @param point_1  Depending on the type (see MAV_TRAJECTORY_REPRESENTATION)
+ * @param point_2  Depending on the type (see MAV_TRAJECTORY_REPRESENTATION)
+ * @param point_3  Depending on the type (see MAV_TRAJECTORY_REPRESENTATION)
+ * @param point_4  Depending on the type (see MAV_TRAJECTORY_REPRESENTATION)
+ * @param point_5  Depending on the type (see MAV_TRAJECTORY_REPRESENTATION)
+ * @param point_valid  States if respective point is valid (boolean)
  * @return length of the message in bytes (excluding serial stream start sign)
  */
 static inline uint16_t mavlink_msg_trajectory_pack(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg,
@@ -114,14 +114,14 @@ static inline uint16_t mavlink_msg_trajectory_pack(uint8_t system_id, uint8_t co
  * @param component_id ID of this component (e.g. 200 for IMU)
  * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
- * @param time_usec Timestamp (microseconds since system boot or since UNIX epoch).
- * @param type Waypoints, Bezier etc. see MAV_TRAJECTORY_REPRESENTATION
- * @param point_1 Depending on the type (see MAV_TRAJECTORY_REPRESENTATION)
- * @param point_2 Depending on the type (see MAV_TRAJECTORY_REPRESENTATION)
- * @param point_3 Depending on the type (see MAV_TRAJECTORY_REPRESENTATION)
- * @param point_4 Depending on the type (see MAV_TRAJECTORY_REPRESENTATION)
- * @param point_5 Depending on the type (see MAV_TRAJECTORY_REPRESENTATION)
- * @param point_valid States if respective point is valid (boolean)
+ * @param time_usec [us] Timestamp (microseconds since system boot or since UNIX epoch).
+ * @param type  Waypoints, Bezier etc. see MAV_TRAJECTORY_REPRESENTATION
+ * @param point_1  Depending on the type (see MAV_TRAJECTORY_REPRESENTATION)
+ * @param point_2  Depending on the type (see MAV_TRAJECTORY_REPRESENTATION)
+ * @param point_3  Depending on the type (see MAV_TRAJECTORY_REPRESENTATION)
+ * @param point_4  Depending on the type (see MAV_TRAJECTORY_REPRESENTATION)
+ * @param point_5  Depending on the type (see MAV_TRAJECTORY_REPRESENTATION)
+ * @param point_valid  States if respective point is valid (boolean)
  * @return length of the message in bytes (excluding serial stream start sign)
  */
 static inline uint16_t mavlink_msg_trajectory_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan,
@@ -187,14 +187,14 @@ static inline uint16_t mavlink_msg_trajectory_encode_chan(uint8_t system_id, uin
  * @brief Send a trajectory message
  * @param chan MAVLink channel to send the message
  *
- * @param time_usec Timestamp (microseconds since system boot or since UNIX epoch).
- * @param type Waypoints, Bezier etc. see MAV_TRAJECTORY_REPRESENTATION
- * @param point_1 Depending on the type (see MAV_TRAJECTORY_REPRESENTATION)
- * @param point_2 Depending on the type (see MAV_TRAJECTORY_REPRESENTATION)
- * @param point_3 Depending on the type (see MAV_TRAJECTORY_REPRESENTATION)
- * @param point_4 Depending on the type (see MAV_TRAJECTORY_REPRESENTATION)
- * @param point_5 Depending on the type (see MAV_TRAJECTORY_REPRESENTATION)
- * @param point_valid States if respective point is valid (boolean)
+ * @param time_usec [us] Timestamp (microseconds since system boot or since UNIX epoch).
+ * @param type  Waypoints, Bezier etc. see MAV_TRAJECTORY_REPRESENTATION
+ * @param point_1  Depending on the type (see MAV_TRAJECTORY_REPRESENTATION)
+ * @param point_2  Depending on the type (see MAV_TRAJECTORY_REPRESENTATION)
+ * @param point_3  Depending on the type (see MAV_TRAJECTORY_REPRESENTATION)
+ * @param point_4  Depending on the type (see MAV_TRAJECTORY_REPRESENTATION)
+ * @param point_5  Depending on the type (see MAV_TRAJECTORY_REPRESENTATION)
+ * @param point_valid  States if respective point is valid (boolean)
  */
 #ifdef MAVLINK_USE_CONVENIENCE_FUNCTIONS
 
@@ -283,7 +283,7 @@ static inline void mavlink_msg_trajectory_send_buf(mavlink_message_t *msgbuf, ma
 /**
  * @brief Get field time_usec from trajectory message
  *
- * @return Timestamp (microseconds since system boot or since UNIX epoch).
+ * @return [us] Timestamp (microseconds since system boot or since UNIX epoch).
  */
 static inline uint64_t mavlink_msg_trajectory_get_time_usec(const mavlink_message_t* msg)
 {
@@ -293,7 +293,7 @@ static inline uint64_t mavlink_msg_trajectory_get_time_usec(const mavlink_messag
 /**
  * @brief Get field type from trajectory message
  *
- * @return Waypoints, Bezier etc. see MAV_TRAJECTORY_REPRESENTATION
+ * @return  Waypoints, Bezier etc. see MAV_TRAJECTORY_REPRESENTATION
  */
 static inline uint8_t mavlink_msg_trajectory_get_type(const mavlink_message_t* msg)
 {
@@ -303,7 +303,7 @@ static inline uint8_t mavlink_msg_trajectory_get_type(const mavlink_message_t* m
 /**
  * @brief Get field point_1 from trajectory message
  *
- * @return Depending on the type (see MAV_TRAJECTORY_REPRESENTATION)
+ * @return  Depending on the type (see MAV_TRAJECTORY_REPRESENTATION)
  */
 static inline uint16_t mavlink_msg_trajectory_get_point_1(const mavlink_message_t* msg, float *point_1)
 {
@@ -313,7 +313,7 @@ static inline uint16_t mavlink_msg_trajectory_get_point_1(const mavlink_message_
 /**
  * @brief Get field point_2 from trajectory message
  *
- * @return Depending on the type (see MAV_TRAJECTORY_REPRESENTATION)
+ * @return  Depending on the type (see MAV_TRAJECTORY_REPRESENTATION)
  */
 static inline uint16_t mavlink_msg_trajectory_get_point_2(const mavlink_message_t* msg, float *point_2)
 {
@@ -323,7 +323,7 @@ static inline uint16_t mavlink_msg_trajectory_get_point_2(const mavlink_message_
 /**
  * @brief Get field point_3 from trajectory message
  *
- * @return Depending on the type (see MAV_TRAJECTORY_REPRESENTATION)
+ * @return  Depending on the type (see MAV_TRAJECTORY_REPRESENTATION)
  */
 static inline uint16_t mavlink_msg_trajectory_get_point_3(const mavlink_message_t* msg, float *point_3)
 {
@@ -333,7 +333,7 @@ static inline uint16_t mavlink_msg_trajectory_get_point_3(const mavlink_message_
 /**
  * @brief Get field point_4 from trajectory message
  *
- * @return Depending on the type (see MAV_TRAJECTORY_REPRESENTATION)
+ * @return  Depending on the type (see MAV_TRAJECTORY_REPRESENTATION)
  */
 static inline uint16_t mavlink_msg_trajectory_get_point_4(const mavlink_message_t* msg, float *point_4)
 {
@@ -343,7 +343,7 @@ static inline uint16_t mavlink_msg_trajectory_get_point_4(const mavlink_message_
 /**
  * @brief Get field point_5 from trajectory message
  *
- * @return Depending on the type (see MAV_TRAJECTORY_REPRESENTATION)
+ * @return  Depending on the type (see MAV_TRAJECTORY_REPRESENTATION)
  */
 static inline uint16_t mavlink_msg_trajectory_get_point_5(const mavlink_message_t* msg, float *point_5)
 {
@@ -353,7 +353,7 @@ static inline uint16_t mavlink_msg_trajectory_get_point_5(const mavlink_message_
 /**
  * @brief Get field point_valid from trajectory message
  *
- * @return States if respective point is valid (boolean)
+ * @return  States if respective point is valid (boolean)
  */
 static inline uint16_t mavlink_msg_trajectory_get_point_valid(const mavlink_message_t* msg, uint8_t *point_valid)
 {

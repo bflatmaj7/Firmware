@@ -32,12 +32,11 @@
 ############################################################################
 
 px4_add_module(
-	MODULE drivers__pt100
-	MAIN pt100
+	MODULE drivers__max31865
+	MAIN max31865
 	COMPILE_FLAGS
 	SRCS
-		pt100_spi.cpp
-		pt100.cpp
+		max31865.cpp
 	DEPENDS
 	)
 

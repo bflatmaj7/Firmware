@@ -5,16 +5,16 @@
 
 MAVPACKED(
 typedef struct __mavlink_mhp_t {
- uint32_t time_usec; /*< Timestamp (microseconds since system boot or since UNIX epoch).*/
- float dp0; /*< diff. pressure, port 0*/
- float dp1; /*< diff. pressure, port 1*/
- float dp2; /*< diff. pressure, port 2*/
- float dp3; /*< diff. pressure, port 3*/
- float dp4; /*< diff. pressure, port 4*/
- float dpS; /*< diff. pressure, static port*/
- float tas; /*< true airspeed*/
- float aoa; /*< angle of attack*/
- float aos; /*< angle of sideslip*/
+ uint32_t time_usec; /*< [us] Timestamp (microseconds since system boot or since UNIX epoch).*/
+ float dp0; /*<  diff. pressure, port 0*/
+ float dp1; /*<  diff. pressure, port 1*/
+ float dp2; /*<  diff. pressure, port 2*/
+ float dp3; /*<  diff. pressure, port 3*/
+ float dp4; /*<  diff. pressure, port 4*/
+ float dpS; /*<  diff. pressure, static port*/
+ float tas; /*<  true airspeed*/
+ float aoa; /*<  angle of attack*/
+ float aos; /*<  angle of sideslip*/
 }) mavlink_mhp_t;
 
 #define MAVLINK_MSG_ID_MHP_LEN 40
@@ -68,16 +68,16 @@ typedef struct __mavlink_mhp_t {
  * @param component_id ID of this component (e.g. 200 for IMU)
  * @param msg The MAVLink message to compress the data into
  *
- * @param time_usec Timestamp (microseconds since system boot or since UNIX epoch).
- * @param dp0 diff. pressure, port 0
- * @param dp1 diff. pressure, port 1
- * @param dp2 diff. pressure, port 2
- * @param dp3 diff. pressure, port 3
- * @param dp4 diff. pressure, port 4
- * @param dpS diff. pressure, static port
- * @param tas true airspeed
- * @param aoa angle of attack
- * @param aos angle of sideslip
+ * @param time_usec [us] Timestamp (microseconds since system boot or since UNIX epoch).
+ * @param dp0  diff. pressure, port 0
+ * @param dp1  diff. pressure, port 1
+ * @param dp2  diff. pressure, port 2
+ * @param dp3  diff. pressure, port 3
+ * @param dp4  diff. pressure, port 4
+ * @param dpS  diff. pressure, static port
+ * @param tas  true airspeed
+ * @param aoa  angle of attack
+ * @param aos  angle of sideslip
  * @return length of the message in bytes (excluding serial stream start sign)
  */
 static inline uint16_t mavlink_msg_mhp_pack(uint8_t system_id, uint8_t component_id, mavlink_message_t* msg,
@@ -123,16 +123,16 @@ static inline uint16_t mavlink_msg_mhp_pack(uint8_t system_id, uint8_t component
  * @param component_id ID of this component (e.g. 200 for IMU)
  * @param chan The MAVLink channel this message will be sent over
  * @param msg The MAVLink message to compress the data into
- * @param time_usec Timestamp (microseconds since system boot or since UNIX epoch).
- * @param dp0 diff. pressure, port 0
- * @param dp1 diff. pressure, port 1
- * @param dp2 diff. pressure, port 2
- * @param dp3 diff. pressure, port 3
- * @param dp4 diff. pressure, port 4
- * @param dpS diff. pressure, static port
- * @param tas true airspeed
- * @param aoa angle of attack
- * @param aos angle of sideslip
+ * @param time_usec [us] Timestamp (microseconds since system boot or since UNIX epoch).
+ * @param dp0  diff. pressure, port 0
+ * @param dp1  diff. pressure, port 1
+ * @param dp2  diff. pressure, port 2
+ * @param dp3  diff. pressure, port 3
+ * @param dp4  diff. pressure, port 4
+ * @param dpS  diff. pressure, static port
+ * @param tas  true airspeed
+ * @param aoa  angle of attack
+ * @param aos  angle of sideslip
  * @return length of the message in bytes (excluding serial stream start sign)
  */
 static inline uint16_t mavlink_msg_mhp_pack_chan(uint8_t system_id, uint8_t component_id, uint8_t chan,
@@ -204,16 +204,16 @@ static inline uint16_t mavlink_msg_mhp_encode_chan(uint8_t system_id, uint8_t co
  * @brief Send a mhp message
  * @param chan MAVLink channel to send the message
  *
- * @param time_usec Timestamp (microseconds since system boot or since UNIX epoch).
- * @param dp0 diff. pressure, port 0
- * @param dp1 diff. pressure, port 1
- * @param dp2 diff. pressure, port 2
- * @param dp3 diff. pressure, port 3
- * @param dp4 diff. pressure, port 4
- * @param dpS diff. pressure, static port
- * @param tas true airspeed
- * @param aoa angle of attack
- * @param aos angle of sideslip
+ * @param time_usec [us] Timestamp (microseconds since system boot or since UNIX epoch).
+ * @param dp0  diff. pressure, port 0
+ * @param dp1  diff. pressure, port 1
+ * @param dp2  diff. pressure, port 2
+ * @param dp3  diff. pressure, port 3
+ * @param dp4  diff. pressure, port 4
+ * @param dpS  diff. pressure, static port
+ * @param tas  true airspeed
+ * @param aoa  angle of attack
+ * @param aos  angle of sideslip
  */
 #ifdef MAVLINK_USE_CONVENIENCE_FUNCTIONS
 
@@ -314,7 +314,7 @@ static inline void mavlink_msg_mhp_send_buf(mavlink_message_t *msgbuf, mavlink_c
 /**
  * @brief Get field time_usec from mhp message
  *
- * @return Timestamp (microseconds since system boot or since UNIX epoch).
+ * @return [us] Timestamp (microseconds since system boot or since UNIX epoch).
  */
 static inline uint32_t mavlink_msg_mhp_get_time_usec(const mavlink_message_t* msg)
 {
@@ -324,7 +324,7 @@ static inline uint32_t mavlink_msg_mhp_get_time_usec(const mavlink_message_t* ms
 /**
  * @brief Get field dp0 from mhp message
  *
- * @return diff. pressure, port 0
+ * @return  diff. pressure, port 0
  */
 static inline float mavlink_msg_mhp_get_dp0(const mavlink_message_t* msg)
 {
@@ -334,7 +334,7 @@ static inline float mavlink_msg_mhp_get_dp0(const mavlink_message_t* msg)
 /**
  * @brief Get field dp1 from mhp message
  *
- * @return diff. pressure, port 1
+ * @return  diff. pressure, port 1
  */
 static inline float mavlink_msg_mhp_get_dp1(const mavlink_message_t* msg)
 {
@@ -344,7 +344,7 @@ static inline float mavlink_msg_mhp_get_dp1(const mavlink_message_t* msg)
 /**
  * @brief Get field dp2 from mhp message
  *
- * @return diff. pressure, port 2
+ * @return  diff. pressure, port 2
  */
 static inline float mavlink_msg_mhp_get_dp2(const mavlink_message_t* msg)
 {
@@ -354,7 +354,7 @@ static inline float mavlink_msg_mhp_get_dp2(const mavlink_message_t* msg)
 /**
  * @brief Get field dp3 from mhp message
  *
- * @return diff. pressure, port 3
+ * @return  diff. pressure, port 3
  */
 static inline float mavlink_msg_mhp_get_dp3(const mavlink_message_t* msg)
 {
@@ -364,7 +364,7 @@ static inline float mavlink_msg_mhp_get_dp3(const mavlink_message_t* msg)
 /**
  * @brief Get field dp4 from mhp message
  *
- * @return diff. pressure, port 4
+ * @return  diff. pressure, port 4
  */
 static inline float mavlink_msg_mhp_get_dp4(const mavlink_message_t* msg)
 {
@@ -374,7 +374,7 @@ static inline float mavlink_msg_mhp_get_dp4(const mavlink_message_t* msg)
 /**
  * @brief Get field dpS from mhp message
  *
- * @return diff. pressure, static port
+ * @return  diff. pressure, static port
  */
 static inline float mavlink_msg_mhp_get_dpS(const mavlink_message_t* msg)
 {
@@ -384,7 +384,7 @@ static inline float mavlink_msg_mhp_get_dpS(const mavlink_message_t* msg)
 /**
  * @brief Get field tas from mhp message
  *
- * @return true airspeed
+ * @return  true airspeed
  */
 static inline float mavlink_msg_mhp_get_tas(const mavlink_message_t* msg)
 {
@@ -394,7 +394,7 @@ static inline float mavlink_msg_mhp_get_tas(const mavlink_message_t* msg)
 /**
  * @brief Get field aoa from mhp message
  *
- * @return angle of attack
+ * @return  angle of attack
  */
 static inline float mavlink_msg_mhp_get_aoa(const mavlink_message_t* msg)
 {
@@ -404,7 +404,7 @@ static inline float mavlink_msg_mhp_get_aoa(const mavlink_message_t* msg)
 /**
  * @brief Get field aos from mhp message
  *
- * @return angle of sideslip
+ * @return  angle of sideslip
  */
 static inline float mavlink_msg_mhp_get_aos(const mavlink_message_t* msg)
 {
