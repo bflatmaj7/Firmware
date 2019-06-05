@@ -71,6 +71,7 @@
 #include <uORB/uORB.h>
 #include <uORB/topics/meteo.h>
 #include <uORB/topics/mhp.h>
+#include <uORB/topics/pt100.h>
 #include <uORB/topics/debug_key_value.h>
 
 #include <board_config.h>
@@ -122,6 +123,7 @@ private:
 	int				_measure_ticks;
 	int				_class_instance;
 	int				_orb_class_instance;
+	int				_orb_sensor_pt100_fd;
 	int				_orb_sensor_baro_fd;
 
 	orb_advert_t		_meteo_topic;
@@ -468,7 +470,6 @@ HYT271::collect()
 
 	ret = transfer(nullptr, 0, &val[0], 4);
 
-	_orb_sensor_baro_fd = orb_subscribe(ORB_ID(mhp));
 
 	if (ret < 0) {
 		DEVICE_DEBUG("error reading from sensor: %d", ret);
@@ -480,6 +481,18 @@ HYT271::collect()
     float humidity = ((val[0] & 0x3f) << 8 | val[1]) * (100.0 / 0x3fff);
     float temperature = (val[2] << 8 | (val[3] & 0xfc)) * (165.0 / 0xfffc) - 40;
 
+	_orb_sensor_pt100_fd = orb_subscribe(ORB_ID(pt100));
+	struct pt100_s pt100_msg;
+
+	float pt100;
+	if (orb_copy(ORB_ID(pt100), _orb_sensor_pt100_fd, &pt100_msg) == PX4_OK) {
+		pt100 = pt100_msg.pt100;
+	}
+	else{
+		pt100 = 0;
+	}
+
+	_orb_sensor_baro_fd = orb_subscribe(ORB_ID(mhp));
 	struct mhp_s baro_msg;
 
 	float ps;
@@ -508,6 +521,7 @@ HYT271::collect()
 	report.temperature = temperature;
 	report.t_pot_v = t_pot_v;
 	report.q_hu = q_hu;
+	report.pt100 = pt100;
 	/* TODO: set proper ID */
 	//report.id = 333;
 

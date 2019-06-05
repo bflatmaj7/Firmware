@@ -3958,6 +3958,7 @@ protected:
             _msg_meteo.humidity  = _meteo.humidity;
             _msg_meteo.t_pot_v  = _meteo.t_pot_v;
             _msg_meteo.q_hu  = _meteo.q_hu;
+            _msg_meteo.pt100  = _meteo.pt100;
 
 			mavlink_msg_meteo_send_struct(_mavlink->get_channel(), &_msg_meteo);
 

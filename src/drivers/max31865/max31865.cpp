@@ -56,11 +56,11 @@
 #include <systemlib/err.h>
 
 #include <drivers/drv_hrt.h>
-#include <drivers/drv_meteo.h>
+#include <drivers/drv_pt100.h>
 #include <drivers/device/ringbuffer.h>
 
 #include <uORB/uORB.h>
-#include <uORB/topics/meteo.h>
+#include <uORB/topics/pt100.h>
 #include <uORB/topics/debug_key_value.h>
 
 #include <board_config.h>
@@ -144,7 +144,7 @@ private:
 	int				_orb_class_instance;
 
 
-	orb_advert_t		_meteo_topic;
+	orb_advert_t		_pt100_topic;
 
 	perf_counter_t		_sample_perf;
 	perf_counter_t		_comms_errors;
@@ -204,7 +204,7 @@ MAX31865::MAX31865(int bus, const char *path, uint32_t device) :
 	_measure_ticks(0),
 	_class_instance(-1),
 	_orb_class_instance(-1),
-	_meteo_topic(nullptr),
+	_pt100_topic(nullptr),
 	_sample_perf(perf_alloc(PC_ELAPSED, "max31865_read")),
 	_comms_errors(perf_alloc(PC_COUNT, "max31865_com_err"))
 {
@@ -225,12 +225,12 @@ MAX31865::~MAX31865()
 		delete _reports;
 	}
 
-	if (_meteo_topic != nullptr) {
-		orb_unadvertise(_meteo_topic);
+	if (_pt100_topic != nullptr) {
+		orb_unadvertise(_pt100_topic);
 	}
 
 	if (_class_instance != -1) {
-		unregister_class_devname(METEO_BASE_DEVICE_PATH, _class_instance);
+		unregister_class_devname(PT100_BASE_DEVICE_PATH, _class_instance);
 	}
 
 	/* free perf counters */
@@ -252,23 +252,23 @@ MAX31865::init()
 	}
 
 	/* allocate basic report buffers */
-	_reports = new ringbuffer::RingBuffer(2, sizeof(meteo_s));
+	_reports = new ringbuffer::RingBuffer(2, sizeof(pt100_s));
 
 
 	if (_reports == nullptr) {
 		return ret;
 	}
 
-	_class_instance = register_class_devname(METEO_BASE_DEVICE_PATH);
+	_class_instance = register_class_devname(PT100_BASE_DEVICE_PATH);
 
 	/* get a publish handle on the range finder topic */
-	struct meteo_s ds_report = {};
+	struct pt100_s ds_report = {};
 
-	_meteo_topic = orb_advertise_multi(ORB_ID(meteo), &ds_report,
+	_pt100_topic = orb_advertise_multi(ORB_ID(pt100), &ds_report,
 			 &_orb_class_instance, ORB_PRIO_HIGH);
 
-	if (_meteo_topic == nullptr) {
-		DEVICE_LOG("failed to create meteo object. Did you start uOrb?");
+	if (_pt100_topic == nullptr) {
+		DEVICE_LOG("failed to create pt100 object. Did you start uOrb?");
 	}
 
 	setWires(MAX31865_4WIRE);
@@ -512,8 +512,8 @@ MAX31865::write_reg(uint8_t reg, uint8_t val)
 ssize_t
 MAX31865::read(device::file_t *filp, char *buffer, size_t buflen)
 {
-	unsigned count = buflen / sizeof(struct meteo_s);
-	struct meteo_s *rbuf = reinterpret_cast<struct meteo_s *>(buffer);
+	unsigned count = buflen / sizeof(struct pt100_s);
+	struct pt100_s *rbuf = reinterpret_cast<struct pt100_s *>(buffer);
 	int ret = 0;
 
 	/* buffer must be large enough */
@@ -623,16 +623,16 @@ MAX31865::collect()
 
     float temperature = convert_temp(rtd);
 
-	struct meteo_s report;
+	struct pt100_s report;
 	report.timestamp = hrt_absolute_time();
 	report.pt100 = temperature;
 	/* TODO: set proper ID */
 	//report.id = 333;
 
 	/* publish it, if we are the primary */
-	if (_meteo_topic != nullptr) {
-		orb_publish(ORB_ID(meteo), _meteo_topic, &report);
-//		PX4_WARN("meteo published");
+	if (_pt100_topic != nullptr) {
+		orb_publish(ORB_ID(pt100), _pt100_topic, &report);
+//		PX4_WARN("pt100 published");
 	}
 
 	_reports->force(&report);
@@ -799,7 +799,7 @@ void stop()
 void
 test()
 {
-	struct meteo_s report;
+	struct pt100_s report;
 	ssize_t sz;
 	int ret;
 
