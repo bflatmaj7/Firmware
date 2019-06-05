@@ -89,8 +89,8 @@
 # error This requires CONFIG_SCHED_WORKQUEUE.
 #endif
 
-struct debug_key_value_s dbg;
-orb_advert_t 		pub_dbg;
+//struct debug_key_value_s dbg;
+//orb_advert_t 		pub_dbg;
 
 class HYT271 : public device::I2C
 {
@@ -790,9 +790,9 @@ hyt271_main(int argc, char *argv[])
 	int myoptind = 1;
 	const char *myoptarg = nullptr;
 
-	strncpy(dbg.key, "debug_test", sizeof(dbg.key));
-	dbg.value = 0.0f;
-	pub_dbg = orb_advertise(ORB_ID(debug_key_value), &dbg);
+//	strncpy(dbg.key, "debug_test", sizeof(dbg.key));
+//	dbg.value = 0.0f;
+//	pub_dbg = orb_advertise(ORB_ID(debug_key_value), &dbg);
 
 	while ((ch = px4_getopt(argc, argv, "R:", &myoptind, &myoptarg)) != EOF) {
 		switch (ch) {

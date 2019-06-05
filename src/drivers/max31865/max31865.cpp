@@ -229,7 +229,6 @@ MAX31865::~MAX31865()
 		orb_unadvertise(_meteo_topic);
 	}
 
-
 	if (_class_instance != -1) {
 		unregister_class_devname(METEO_BASE_DEVICE_PATH, _class_instance);
 	}
@@ -245,7 +244,7 @@ MAX31865::init()
 	int ret = PX4_ERROR;
 
 	_temperature = 0.0f;
-	_conversion_interval = 1000000;
+	_conversion_interval = 100000;
 
 	/* do SPI init (and probe) first */
 	if (SPI::init() != OK) {
@@ -273,9 +272,9 @@ MAX31865::init()
 	}
 
 	setWires(MAX31865_4WIRE);
-//	enableBias(false);
-//	autoConvert(false);
-//	clearFault();
+	enableBias(false);
+	autoConvert(false);
+	clearFault();
 	// Select altitude register
 	int ret2 = measure();
 
@@ -606,8 +605,8 @@ MAX31865::collect()
 //	cmd[0] = (uint8_t)(MAX31856_RTDMSB_REG | DIR_READ);;
 //	ret = transfer(cmd, nullptr, 1);
 //	ret = transfer(nullptr, cmd, sizeof(cmd));
-	uint8_t cmd[2] = { (uint8_t)(MAX31856_RTDMSB_REG | DIR_READ), 0}; //set MSB bit
-	ret = transfer(&cmd[0], &cmd[0], 2);
+	uint8_t cmd[3] = { (uint8_t)(MAX31856_RTDMSB_REG | DIR_READ), 0,0}; //set MSB bit
+	ret = transfer(&cmd[0], &cmd[0], 3);
 
 //	ret = read_reg8(MAX31856_CONFIG_REG);
 
@@ -619,7 +618,7 @@ MAX31865::collect()
 		return ret;
 	}
 
-    uint16_t rtd = (cmd[1] << 8) + cmd[0];
+    uint16_t rtd = (cmd[1] << 8) + cmd[2];
     rtd >>= 1;
 
     float temperature = convert_temp(rtd);
