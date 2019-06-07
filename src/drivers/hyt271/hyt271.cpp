@@ -538,6 +538,10 @@ HYT271::collect()
 
 	ret = OK;
 
+	if (_orb_sensor_pt100_fd != -1) {
+		orb_unsubscribe(_orb_sensor_pt100_fd);
+	}
+
 	if (_orb_sensor_baro_fd != -1) {
 		orb_unsubscribe(_orb_sensor_baro_fd);
 	}
