@@ -568,39 +568,40 @@ PSC5B::handle_msg(PSC5B_MESSAGE *msg)
 	case PSC5B_CANID2:
 		_dp1 = (float)(*(short *)&msg->data[0]);
 		_dpS = (*(short *)&msg->data[2])*5;
-//		calc_flow();
+	//	calc_flow();
+	//	_dp0 = 316;
+	//	_dp2 = -123;
+	//	_dp4 = 25;
+	//	_dp3 = -163;
+	//	_dp1 = 0;
+	//	_dpS = 95100;
+	//	calc_flow();
+
+		struct mhp_s report;
+
+		report.timestamp = hrt_absolute_time();
+		report.dp0 = _dp0;
+		report.dp1 = _dp1;
+		report.dp2 = _dp2;
+		report.dp3 = _dp3;
+		report.dp4 = _dp4;
+		report.dpS = _dpS;
+		report.aoa = _aoa;
+		report.aos = _aos;
+		report.tas = _tas;
+		/* TODO: set proper ID */
+		report.id = 989;
+
+		/* publish it */
+		orb_publish(ORB_ID(mhp), _mhp_topic, &report);
+
+		_reports->force(&report);
 		break;
 	default:
 		break;
 	}
 
-//	_dp0 = 316;
-//	_dp2 = -123;
-//	_dp4 = 25;
-//	_dp3 = -163;
-//	_dp1 = 0;
-//	_dpS = 95100;
-//	calc_flow();
 
-	struct mhp_s report;
-
-	report.timestamp = hrt_absolute_time();
-	report.dp0 = _dp0;
-	report.dp1 = _dp1;
-	report.dp2 = _dp2;
-	report.dp3 = _dp3;
-	report.dp4 = _dp4;
-	report.dpS = _dpS;
-	report.aoa = _aoa;
-	report.aos = _aos;
-	report.tas = _tas;
-	/* TODO: set proper ID */
-	report.id = 989;
-
-	/* publish it */
-	orb_publish(ORB_ID(mhp), _mhp_topic, &report);
-
-	_reports->force(&report);
 
 	return OK;
 

@@ -600,11 +600,11 @@ void Logger::add_default_topics()
 	add_topic("estimator_status", 200);
 	add_topic("home_position");
 	add_topic("input_rc", 200);
-	add_topic("ins",10);
+	add_topic("ins");
 	add_topic("landing_target_pose");
 	add_topic("manual_control_setpoint", 200);
 	add_topic("meteo");
-	add_topic("mhp",10);
+	add_topic("mhp");
 	add_topic("mission");
 	add_topic("mission_result");
 	add_topic("optical_flow", 50);

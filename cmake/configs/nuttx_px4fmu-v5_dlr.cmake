@@ -39,9 +39,9 @@ set(config_module_list
 	drivers/stm32
 	drivers/stm32/adc
 	drivers/stm32/tone_alarm
-	drivers/tap_esc
+	#drivers/tap_esc
 	drivers/vmount
-	modules/sensors
+	#modules/sensors
 
 	#
 	# System commands
@@ -82,13 +82,13 @@ set(config_module_list
 	#
 	# General system control
 	#
-	modules/commander
-	modules/events
+	#modules/commander
+	#modules/events
 	#modules/gpio_led
 	#modules/land_detector
 	modules/load_mon
 	modules/mavlink
-	modules/navigator
+	#modules/navigator
 	#modules/uavcan
 	#modules/camera_feedback
 
@@ -106,13 +106,13 @@ set(config_module_list
 	#
 	# Vehicle Control
 	#
-	modules/fw_att_control
-	modules/fw_pos_control_l1
+	#modules/fw_att_control
+	#modules/fw_pos_control_l1
 	#modules/gnd_att_control
 	#modules/gnd_pos_control
-	modules/mc_att_control
-	modules/mc_pos_control
-	modules/vtol_att_control
+	#modules/mc_att_control
+	#modules/mc_pos_control
+	#modules/vtol_att_control
 
 	#
 	# Logging
