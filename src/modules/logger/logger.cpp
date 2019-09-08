@@ -587,7 +587,7 @@ void Logger::add_default_topics()
 	// Note: try to avoid setting the interval where possible, as it increases RAM usage
 	add_topic("actuator_controls_0", 100);
 	add_topic("actuator_controls_1", 100);
-	add_topic("actuator_outputs", 100);
+	add_topic("actuator_outputs");
 	add_topic("airspeed", 200);
 	add_topic("att_pos_mocap", 50);
 	add_topic("battery_status", 500);
@@ -630,7 +630,7 @@ void Logger::add_default_topics()
 	add_topic("vehicle_vision_attitude");
 	add_topic("vehicle_vision_position");
 	add_topic("vtol_vehicle_status", 200);
-	add_topic("wind_estimate", 200);
+	add_topic("wind_estimate");
 	add_topic("timesync_status");
 
 #ifdef CONFIG_ARCH_BOARD_SITL

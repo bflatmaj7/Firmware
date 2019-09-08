@@ -211,11 +211,10 @@ MhpWindModule::cycle()
 	wind_estimate_s wind_est = {};
 	if (ins_valid && mhp_valid && meteo_valid) {
 
-
-		float droll = 0.0;  // in deg
-		float dpitch = -2.0;  // in deg
-		float dyaw = -5.0;  // in deg
-		float dtas = 1.03;
+		float droll = -0.3;  // in deg
+		float dpitch = 1.92;  // in deg
+		float dyaw = -1.26;  // in deg
+		float dtas = 1.01;
 
 		// correct the attitude angles and tas using the correction factors
 		float tas = mhp.tas * dtas;

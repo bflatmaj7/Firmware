@@ -440,7 +440,7 @@ float MAX31865::convert_temp(uint16_t rtd) {
 
   float Z1, Z2, Z3, Z4, Rt, temp;
   float RTDnominal = 100;
-  float refResistor = 430;
+  float refResistor = 430; // Adafruit 470;// MikroOE
 
   Rt = (float)rtd;
   Rt /= 32768;

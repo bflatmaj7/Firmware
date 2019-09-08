@@ -524,7 +524,6 @@ PSC5B::collect()
 			}
 		}
 
-
 	}
 	else if (ret == 0) {
 //		PX4_WARN("no data received.");
@@ -568,7 +567,7 @@ PSC5B::handle_msg(PSC5B_MESSAGE *msg)
 	case PSC5B_CANID2:
 		_dp1 = (float)(*(short *)&msg->data[0]);
 		_dpS = (*(short *)&msg->data[2])*5;
-	//	calc_flow();
+		calc_flow();
 	//	_dp0 = 316;
 	//	_dp2 = -123;
 	//	_dp4 = 25;
