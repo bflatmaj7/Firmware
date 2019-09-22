@@ -214,7 +214,7 @@ MhpWindModule::cycle()
 		float droll = -0.3;  // in deg
 		float dpitch = 1.92;  // in deg
 		float dyaw = -1.26;  // in deg
-		float dtas = 1.01;
+		float dtas = 1.012;
 
 		// correct the attitude angles and tas using the correction factors
 		float tas = mhp.tas * dtas;

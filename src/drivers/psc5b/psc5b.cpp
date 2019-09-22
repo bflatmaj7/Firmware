@@ -567,7 +567,7 @@ PSC5B::handle_msg(PSC5B_MESSAGE *msg)
 	case PSC5B_CANID2:
 		_dp1 = (float)(*(short *)&msg->data[0]);
 		_dpS = (*(short *)&msg->data[2])*5;
-		calc_flow();
+	//	calc_flow();
 	//	_dp0 = 316;
 	//	_dp2 = -123;
 	//	_dp4 = 25;
@@ -599,8 +599,6 @@ PSC5B::handle_msg(PSC5B_MESSAGE *msg)
 	default:
 		break;
 	}
-
-
 
 	return OK;
 
